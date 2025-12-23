@@ -743,7 +743,7 @@ export const createEvent = async (data: any) => {
     location: data.extendedProps?.location || data.location,
     description: data.extendedProps?.description || data.description,
     type: data.extendedProps?.type || data.type,
-    backgroundColor: data.backgroundColor
+    background_color: data.backgroundColor || '#3B82F6'
   };
 
   const { data: inserted, error } = await supabase.from('events').insert([payload]).select().single();
@@ -756,7 +756,7 @@ export const updateEvent = async (id: string, data: any) => {
   if (data.title) payload.title = data.title;
   if (data.start) payload.start = data.start;
   if (data.end) payload.end = data.end;
-  if (data.backgroundColor) payload.backgroundColor = data.backgroundColor;
+  if (data.backgroundColor) payload.background_color = data.backgroundColor;
 
   const location = data.extendedProps?.location ?? data.location;
   if (location !== undefined) payload.location = location;
