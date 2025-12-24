@@ -78,13 +78,12 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
       // 3. Reset Form
       setContent('');
       handleRemoveImage();
-      
+
       // 4. Notify Parent
       onPostCreated();
       showToast('Đăng bài viết thành công!', 'success');
 
     } catch (error) {
-      console.error('Failed to create post:', error);
       showToast('Có lỗi xảy ra khi đăng bài.', 'error');
     } finally {
       setIsSubmitting(false);
@@ -96,7 +95,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 mb-6">
         <div className="flex gap-4">
           <div className="flex-shrink-0">
-            <img 
+            <img
               src={user.avatar || `https://ui-avatars.com/api/?name=${user.fullName}&background=0D8ABC&color=fff`}
               alt={user.fullName}
               className="w-10 h-10 rounded-full object-cover border border-slate-200"
@@ -126,14 +125,14 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
               </div>
             ) : (
               // Image Upload Trigger
-              <div 
+              <div
                 className="border-2 border-dashed border-slate-200 rounded-lg p-4 flex flex-col items-center justify-center text-slate-400 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  className="hidden" 
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
                   ref={fileInputRef}
                   onChange={handleImageChange}
                   disabled={isSubmitting}
@@ -169,9 +168,8 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated }) => {
 
       {/* Toast Portal */}
       {toast && createPortal(
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${
-          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{toast.message}</span>
         </div>,

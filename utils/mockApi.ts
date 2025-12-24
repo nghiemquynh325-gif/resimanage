@@ -180,7 +180,8 @@ export const fetchMock = async (endpoint: string, options?: any) => {
       extendedProps: {
         location: e.location,
         description: e.description,
-        type: e.type
+        type: e.type,
+        attendees: e.attendees
       }
     }));
 
@@ -205,7 +206,8 @@ export const fetchMock = async (endpoint: string, options?: any) => {
       extendedProps: {
         location: e.location,
         description: e.description,
-        type: e.type
+        type: e.type,
+        attendees: e.attendees
       }
     }));
 
@@ -401,6 +403,28 @@ export const getResidents = async (params: any) => {
 
   if (params.ethnicity && params.ethnicity !== 'all') query = query.eq('ethnicity', params.ethnicity);
   if (params.religion && params.religion !== 'all') query = query.eq('religion', params.religion);
+
+  // Gender Filter
+  if (params.gender && params.gender !== 'all') {
+    query = query.eq('gender', params.gender);
+  }
+
+  // Age Range Filter
+  if (params.ageFrom || params.ageTo) {
+    const currentYear = new Date().getFullYear();
+
+    if (params.ageFrom) {
+      // For minimum age, person must be born on or before (currentYear - ageFrom)
+      const maxBirthYear = currentYear - params.ageFrom;
+      query = query.lte('dob', `${maxBirthYear}-12-31`);
+    }
+
+    if (params.ageTo) {
+      // For maximum age, person must be born on or after (currentYear - ageTo)
+      const minBirthYear = currentYear - params.ageTo;
+      query = query.gte('dob', `${minBirthYear}-01-01`);
+    }
+  }
 
   if (params.specialFilter && params.specialFilter !== 'all') {
     if (params.specialFilter === 'party_member') {
@@ -743,6 +767,7 @@ export const createEvent = async (data: any) => {
     location: data.extendedProps?.location || data.location,
     description: data.extendedProps?.description || data.description,
     type: data.extendedProps?.type || data.type,
+    attendees: data.extendedProps?.attendees || data.attendees,
     background_color: data.backgroundColor || '#3B82F6'
   };
 
@@ -766,6 +791,9 @@ export const updateEvent = async (id: string, data: any) => {
 
   const type = data.extendedProps?.type ?? data.type;
   if (type !== undefined) payload.type = type;
+
+  const attendees = data.extendedProps?.attendees ?? data.attendees;
+  if (attendees !== undefined) payload.attendees = attendees;
 
   const { data: updated, error } = await supabase.from('events').update(payload).eq('id', id).select().single();
   if (error) throw new Error(error.message);
@@ -814,6 +842,11 @@ export const likePost = async (id: string) => {
     const newLikes = (data.likes || 0) + 1;
     await supabase.from('posts').update({ likes: newLikes }).eq('id', id);
   }
+};
+
+export const deletePost = async (id: string) => {
+  const { error } = await supabase.from('posts').delete().eq('id', id);
+  if (error) throw new Error(error.message);
 };
 
 export const getCommunitySettings = async () => {

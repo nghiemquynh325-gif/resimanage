@@ -67,6 +67,7 @@ export interface CalendarEvent {
     location?: string;
     description?: string;
     type?: 'Họp' | 'Sinh hoạt' | 'Khác';
+    attendees?: string;
   };
 }
 

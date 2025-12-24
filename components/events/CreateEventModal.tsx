@@ -18,6 +18,7 @@ const eventSchema = z.object({
   location: z.string().optional(),
   description: z.string().optional(),
   type: z.enum(['Họp', 'Sinh hoạt', 'Khác']),
+  attendees: z.string().optional(),
 }).refine(data => new Date(data.end) > new Date(data.start), {
   message: "Thời gian kết thúc phải sau thời gian bắt đầu",
   path: ["end"],
@@ -25,6 +26,58 @@ const eventSchema = z.object({
 
 type EventFormData = z.infer<typeof eventSchema>;
 
+/**
+ * Create/Edit Event Modal Component
+ * 
+ * A modal dialog for creating new events or editing existing ones in the calendar.
+ * Supports full CRUD operations with form validation using Zod.
+ * 
+ * **Features**:
+ * - Create new events
+ * - Edit existing events
+ * - Delete events with confirmation
+ * - Date/time validation (end must be after start)
+ * - Event type selection (Họp, Sinh hoạt, Khác)
+ * - Attendees field for tracking participants
+ * - Read-only mode for viewing event details
+ * - Toast notifications for success/error feedback
+ * 
+ * **Form Fields**:
+ * - Title (required)
+ * - Start date/time (required)
+ * - End date/time (required)
+ * - Location (optional)
+ * - Event type (required)
+ * - Description (optional)
+ * - Attendees (optional)
+ * 
+ * @param {CreateEventModalProps} props - Component props
+ * @param {boolean} props.isOpen - Controls modal visibility
+ * @param {() => void} props.onClose - Callback when modal closes
+ * @param {() => void} props.onSuccess - Callback after successful save/delete
+ * @param {CalendarEvent | null} [props.eventData] - Event data for editing (null for new event)
+ * @param {{ start: string, end: string } | null} [props.initialDate] - Initial date range for new events
+ * @param {boolean} [props.readOnly=false] - If true, shows event in read-only mode
+ * 
+ * @example
+ * ```tsx
+ * // Create new event
+ * <CreateEventModal
+ *   isOpen={isOpen}
+ *   onClose={() => setIsOpen(false)}
+ *   onSuccess={refreshEvents}
+ *   initialDate={{ start: '2024-01-01T09:00', end: '2024-01-01T10:00' }}
+ * />
+ * 
+ * // Edit existing event
+ * <CreateEventModal
+ *   isOpen={isOpen}
+ *   onClose={() => setIsOpen(false)}
+ *   onSuccess={refreshEvents}
+ *   eventData={selectedEvent}
+ * />
+ * ```
+ */
 interface CreateEventModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,11 +97,11 @@ const formatForInput = (isoString?: string) => {
   return localDate.toISOString().slice(0, 16);
 };
 
-const CreateEventModal: React.FC<CreateEventModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  eventData, 
+const CreateEventModal: React.FC<CreateEventModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  eventData,
   initialDate,
   readOnly = false
 }) => {
@@ -89,18 +142,19 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
           location: eventData.extendedProps?.location || '',
           description: eventData.extendedProps?.description || '',
           type: eventData.extendedProps?.type || 'Khác',
+          attendees: eventData.extendedProps?.attendees || '',
         });
       } else if (initialDate) {
         // Creating new event from selection
         let endString = initialDate.end;
         if (new Date(initialDate.end).getTime() - new Date(initialDate.start).getTime() === 86400000) {
-           const startDate = new Date(initialDate.start);
-           startDate.setHours(8, 0, 0, 0);
-           const endDate = new Date(startDate);
-           endDate.setHours(9, 0, 0, 0);
-           
-           initialDate.start = startDate.toISOString();
-           endString = endDate.toISOString();
+          const startDate = new Date(initialDate.start);
+          startDate.setHours(8, 0, 0, 0);
+          const endDate = new Date(startDate);
+          endDate.setHours(9, 0, 0, 0);
+
+          initialDate.start = startDate.toISOString();
+          endString = endDate.toISOString();
         }
 
         reset({
@@ -110,6 +164,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
           location: '',
           description: '',
           type: 'Họp',
+          attendees: '',
         });
       } else {
         reset({
@@ -119,6 +174,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
           location: '',
           description: '',
           type: 'Họp',
+          attendees: '',
         });
       }
     }
@@ -134,9 +190,9 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      let color = '#2563eb'; 
-      if (data.type === 'Sinh hoạt') color = '#16a34a'; 
-      if (data.type === 'Khác') color = '#9333ea'; 
+      let color = '#2563eb';
+      if (data.type === 'Sinh hoạt') color = '#16a34a';
+      if (data.type === 'Khác') color = '#9333ea';
 
       const payload = {
         title: data.title,
@@ -146,7 +202,8 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         extendedProps: {
           location: data.location,
           description: data.description,
-          type: data.type
+          type: data.type,
+          attendees: data.attendees
         }
       };
 
@@ -157,7 +214,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
         await createEvent(payload);
         showToast('Tạo sự kiện mới thành công', 'success');
       }
-      
+
       setTimeout(() => {
         onSuccess();
         onClose();
@@ -204,38 +261,38 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
           )}
 
           <fieldset disabled={readOnly} className="space-y-6">
-            <Input 
-              label="Tiêu đề sự kiện *" 
+            <Input
+              label="Tiêu đề sự kiện *"
               placeholder="Nhập tiêu đề (Ví dụ: Họp tổ dân phố...)"
-              {...register('title')} 
-              error={errors.title?.message} 
+              {...register('title')}
+              error={errors.title?.message}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Bắt đầu *" 
-                type="datetime-local" 
-                {...register('start')} 
-                error={errors.start?.message} 
+              <Input
+                label="Bắt đầu *"
+                type="datetime-local"
+                {...register('start')}
+                error={errors.start?.message}
               />
-              <Input 
-                label="Kết thúc *" 
-                type="datetime-local" 
-                {...register('end')} 
-                error={errors.end?.message} 
+              <Input
+                label="Kết thúc *"
+                type="datetime-local"
+                {...register('end')}
+                error={errors.end?.message}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Địa điểm" 
+              <Input
+                label="Địa điểm"
                 placeholder="Ví dụ: Nhà văn hóa, Phòng họp..."
-                {...register('location')} 
-                error={errors.location?.message} 
+                {...register('location')}
+                error={errors.location?.message}
               />
               <div className="w-full">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Loại sự kiện</label>
-                <select 
+                <select
                   {...register('type')}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-500"
                 >
@@ -248,10 +305,20 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
             <div className="w-full">
               <label className="block text-sm font-medium text-slate-700 mb-1">Mô tả chi tiết</label>
-              <textarea 
+              <textarea
                 {...register('description')}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none disabled:bg-slate-100 disabled:text-slate-500"
                 placeholder="Nhập nội dung chi tiết sự kiện..."
+              />
+            </div>
+
+            <div className="w-full">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Thành phần tham dự</label>
+              <input
+                type="text"
+                {...register('attendees')}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-500"
+                placeholder="Ví dụ: Toàn thể cư dân, Ban chấp hành, Tổ 1-3..."
               />
             </div>
           </fieldset>
@@ -279,7 +346,7 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
               >
                 {readOnly ? "Đóng" : "Hủy"}
               </button>
-              
+
               {!readOnly && (
                 <button
                   type="submit"
@@ -297,9 +364,8 @@ const CreateEventModal: React.FC<CreateEventModalProps> = ({
 
       {/* Internal Toast Portal for Modal Context */}
       {toast && createPortal(
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${
-          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{toast.message}</span>
         </div>,

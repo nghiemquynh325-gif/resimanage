@@ -34,9 +34,13 @@ const ResidentsPage: React.FC = () => {
   // New Filters
   const [filterAgeFrom, setFilterAgeFrom] = useState<string>('');
   const [filterAgeTo, setFilterAgeTo] = useState<string>('');
+  const [filterGender, setFilterGender] = useState('all');
   const [filterSpecial, setFilterSpecial] = useState('all');
   const [filterEthnicity, setFilterEthnicity] = useState('all');
   const [filterReligion, setFilterReligion] = useState('all');
+
+  // UI State
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -66,6 +70,7 @@ const ResidentsPage: React.FC = () => {
       const response = await getResidents({
         search: searchQuery,
         status: filterStatus,
+        gender: filterGender,
         ageFrom: filterAgeFrom ? parseInt(filterAgeFrom) : undefined,
         ageTo: filterAgeTo ? parseInt(filterAgeTo) : undefined,
         specialFilter: filterSpecial,
@@ -92,7 +97,7 @@ const ResidentsPage: React.FC = () => {
       fetchResidents();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filterStatus, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, currentPage]);
+  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, currentPage]);
 
   // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,6 +134,55 @@ const ResidentsPage: React.FC = () => {
     setFilterReligion(e.target.value);
     setCurrentPage(1);
   };
+
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterGender(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleClearAllFilters = () => {
+    setFilterStatus('all');
+    setFilterGender('all');
+    setFilterAgeFrom('');
+    setFilterAgeTo('');
+    setFilterSpecial('all');
+    setFilterEthnicity('all');
+    setFilterReligion('all');
+    setCurrentPage(1);
+  };
+
+  const handleQuickFilter = (type: string) => {
+    handleClearAllFilters();
+    switch (type) {
+      case 'party_member':
+        setFilterSpecial('party_member');
+        break;
+      case 'elderly':
+        setFilterAgeFrom('60');
+        break;
+      case 'male':
+        setFilterGender('Nam');
+        break;
+      case 'female':
+        setFilterGender('Nữ');
+        break;
+    }
+    setCurrentPage(1);
+  };
+
+  // Count active filters
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filterStatus !== 'all') count++;
+    if (filterGender !== 'all') count++;
+    if (filterAgeFrom || filterAgeTo) count++;
+    if (filterSpecial !== 'all') count++;
+    if (filterEthnicity !== 'all') count++;
+    if (filterReligion !== 'all') count++;
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -366,7 +420,7 @@ const ResidentsPage: React.FC = () => {
         <p className="text-slate-500">Quản lý thông tin và trạng thái của cư dân trong hệ thống</p>
       </div>
 
-      {/* Toolbar - Updated with Age and Special Filters */}
+      {/* Toolbar - Compact Design with Collapsible Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-4">
 
         {/* Row 1: Search and Main Actions */}
@@ -411,97 +465,177 @@ const ResidentsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Row 2: Filters */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center pt-2 border-t border-slate-50">
-          <div className="flex items-center gap-2 text-sm text-slate-500 min-w-fit">
+        {/* Row 2: Filter Toggle & Quick Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center pt-2 border-t border-slate-50">
+          <button
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isFilterOpen
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+              }`}
+          >
             <Filter size={16} />
-            <span className="font-medium">Bộ lọc:</span>
+            <span>Bộ lọc</span>
+            {activeFiltersCount > 0 && (
+              <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
+          {/* Quick Filters */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleQuickFilter('party_member')}
+              className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-medium rounded-lg border border-red-200 transition-colors"
+            >
+              Đảng viên
+            </button>
+            <button
+              onClick={() => handleQuickFilter('elderly')}
+              className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-medium rounded-lg border border-orange-200 transition-colors"
+            >
+              Người cao tuổi (≥60)
+            </button>
+            <button
+              onClick={() => handleQuickFilter('male')}
+              className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-lg border border-blue-200 transition-colors"
+            >
+              Nam
+            </button>
+            <button
+              onClick={() => handleQuickFilter('female')}
+              className="px-3 py-1.5 bg-pink-50 hover:bg-pink-100 text-pink-700 text-xs font-medium rounded-lg border border-pink-200 transition-colors"
+            >
+              Nữ
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-            {/* Status Filter */}
-            <select
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={filterStatus}
-              onChange={handleStatusChange}
+          {/* Clear All Filters */}
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={handleClearAllFilters}
+              className="ml-auto px-3 py-1.5 text-slate-600 hover:text-slate-800 text-xs font-medium underline transition-colors"
             >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Hoạt động (Thường/Tạm trú)</option>
-              <option value="pending_approval">Chờ duyệt</option>
-              <option value="inactive">Vô hiệu hóa</option>
-            </select>
+              Xóa tất cả
+            </button>
+          )}
+        </div>
+
+        {/* Row 3: Collapsible Filter Panel */}
+        {isFilterOpen && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-3 border-t border-slate-100 animate-in slide-in-from-top-2 duration-200">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Trạng thái</label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterStatus}
+                onChange={handleStatusChange}
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Hoạt động (Thường/Tạm trú)</option>
+                <option value="pending_approval">Chờ duyệt</option>
+                <option value="inactive">Vô hiệu hóa</option>
+              </select>
+            </div>
+
+            {/* Gender Filter */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Giới tính</label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterGender}
+                onChange={handleGenderChange}
+              >
+                <option value="all">Tất cả</option>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+              </select>
+            </div>
+
+            {/* Age Range */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Độ tuổi</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="Từ"
+                  min="0"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filterAgeFrom}
+                  onChange={handleAgeFromChange}
+                />
+                <span className="text-slate-400">-</span>
+                <input
+                  type="number"
+                  placeholder="Đến"
+                  min="0"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filterAgeTo}
+                  onChange={handleAgeToChange}
+                />
+              </div>
+            </div>
 
             {/* Special Filter */}
-            <select
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={filterSpecial}
-              onChange={handleSpecialChange}
-            >
-              <option value="all">Tất cả đặc điểm</option>
-              <option value="party_member">Đảng viên</option>
-              <option value="Người cao tuổi">Người cao tuổi</option>
-              <option value="Cựu chiến binh">Cựu chiến binh</option>
-              <option value="Người có công">Người có công</option>
-              <option value="Hộ nghèo">Hộ nghèo</option>
-              <option value="special_notes">Có ghi chú đặc biệt</option>
-            </select>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Đặc điểm</label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterSpecial}
+                onChange={handleSpecialChange}
+              >
+                <option value="all">Tất cả đặc điểm</option>
+                <option value="party_member">Đảng viên</option>
+                <option value="Người cao tuổi">Người cao tuổi</option>
+                <option value="Cựu chiến binh">Cựu chiến binh</option>
+                <option value="Người có công">Người có công</option>
+                <option value="Hộ nghèo">Hộ nghèo</option>
+                <option value="special_notes">Có ghi chú đặc biệt</option>
+              </select>
+            </div>
 
             {/* Ethnicity Filter */}
-            <select
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={filterEthnicity}
-              onChange={handleEthnicityChange}
-            >
-              <option value="all">Tất cả dân tộc</option>
-              <option value="Kinh">Kinh</option>
-              <option value="Tày">Tày</option>
-              <option value="Thái">Thái</option>
-              <option value="Hoa">Hoa</option>
-              <option value="Khơ Me">Khơ Me</option>
-              <option value="Mường">Mường</option>
-              <option value="Nùng">Nùng</option>
-              <option value="H'Mông">H'Mông</option>
-            </select>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Dân tộc</label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterEthnicity}
+                onChange={handleEthnicityChange}
+              >
+                <option value="all">Tất cả dân tộc</option>
+                <option value="Kinh">Kinh</option>
+                <option value="Tày">Tày</option>
+                <option value="Thái">Thái</option>
+                <option value="Hoa">Hoa</option>
+                <option value="Khơ Me">Khơ Me</option>
+                <option value="Mường">Mường</option>
+                <option value="Nùng">Nùng</option>
+                <option value="H'Mông">H'Mông</option>
+              </select>
+            </div>
 
             {/* Religion Filter */}
-            <select
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={filterReligion}
-              onChange={handleReligionChange}
-            >
-              <option value="all">Tất cả tôn giáo</option>
-              <option value="Không">Không</option>
-              <option value="Phật giáo">Phật giáo</option>
-              <option value="Công giáo">Công giáo</option>
-              <option value="Tin Lành">Tin Lành</option>
-              <option value="Hòa Hảo">Hòa Hảo</option>
-              <option value="Cao Đài">Cao Đài</option>
-              <option value="Hồi giáo">Hồi giáo</option>
-            </select>
-
-            {/* Age Range - Span 2 columns on large screens to fit better */}
-            <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4 xl:col-span-2">
-              <span className="text-sm text-slate-600 whitespace-nowrap">Độ tuổi:</span>
-              <input
-                type="number"
-                placeholder="Từ"
-                min="0"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filterAgeFrom}
-                onChange={handleAgeFromChange}
-              />
-              <span className="text-slate-400">-</span>
-              <input
-                type="number"
-                placeholder="Đến"
-                min="0"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filterAgeTo}
-                onChange={handleAgeToChange}
-              />
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">Tôn giáo</label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterReligion}
+                onChange={handleReligionChange}
+              >
+                <option value="all">Tất cả tôn giáo</option>
+                <option value="Không">Không</option>
+                <option value="Phật giáo">Phật giáo</option>
+                <option value="Công giáo">Công giáo</option>
+                <option value="Tin Lành">Tin Lành</option>
+                <option value="Hòa Hảo">Hòa Hảo</option>
+                <option value="Cao Đài">Cao Đài</option>
+                <option value="Hồi giáo">Hồi giáo</option>
+              </select>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content Card */}

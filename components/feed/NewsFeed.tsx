@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { fetchMock, likePost } from '../../utils/mockApi';
+import { fetchMock, likePost, deletePost } from '../../utils/mockApi';
 import { Post } from '../../types';
 import PostCard from './PostCard';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -42,8 +42,8 @@ const NewsFeed: React.FC = () => {
   const handleLike = async (postId: string) => {
     // 1. Optimistic Update
     const originalPosts = [...posts];
-    
-    setPosts(currentPosts => 
+
+    setPosts(currentPosts =>
       currentPosts.map(post => {
         if (post.id === postId) {
           const newIsLiked = !post.isLiked;
@@ -62,9 +62,24 @@ const NewsFeed: React.FC = () => {
       await likePost(postId);
     } catch (err) {
       // 3. Revert on Error
-      console.error("Failed to update like status", err);
       setPosts(originalPosts);
       setToast({ message: "Không thể thực hiện hành động này", type: 'error' });
+    }
+  };
+
+  const handleDelete = async (postId: string) => {
+    try {
+      await deletePost(postId);
+      // Optimistic update
+      setPosts(posts.filter(p => p.id !== postId));
+      setToast({ message: 'Đã xóa bài viết', type: 'success' });
+    } catch (error) {
+      setToast({ message: 'Lỗi khi xóa bài viết', type: 'error' });
+      // Reload posts on error
+      const response = await fetchMock('/api/posts');
+      if (response && response.data) {
+        setPosts(response.data as Post[]);
+      }
     }
   };
 
@@ -97,9 +112,9 @@ const NewsFeed: React.FC = () => {
             </div>
             <div className="h-48 bg-slate-200 rounded-lg animate-pulse"></div>
             <div className="flex justify-between mt-4 pt-4 border-t border-slate-50">
-               <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
-               <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
-               <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
+              <div className="h-8 w-20 bg-slate-200 rounded animate-pulse"></div>
             </div>
           </div>
         ))
@@ -109,19 +124,19 @@ const NewsFeed: React.FC = () => {
         </div>
       ) : (
         posts.map((post) => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
+          <PostCard
+            key={post.id}
+            post={post}
             onLike={handleLike}
+            onDelete={handleDelete}
           />
         ))
       )}
 
       {/* Toast Portal */}
       {toast && createPortal(
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${
-          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{toast.message}</span>
         </div>,
