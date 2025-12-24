@@ -284,6 +284,28 @@ export const loginMock = async (email: string, pass: string, role: Role): Promis
       setStorage(KEYS.SESSION, adminUser);
       return adminUser;
     }
+
+    // 2. Check admin_staff table for registered staff
+    const { data: adminStaff, error: staffError } = await supabase
+      .from('admin_staff')
+      .select('*')
+      .eq('email', email)
+      .eq('password', pass)
+      .eq('status', 'approved')
+      .single();
+
+    if (adminStaff && !staffError) {
+      const user: User = {
+        id: adminStaff.id,
+        email: adminStaff.email,
+        fullName: adminStaff.full_name,
+        role: 'ADMIN',
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(adminStaff.full_name)}&background=0D8ABC&color=fff`,
+        phoneNumber: adminStaff.phone_number
+      };
+      setStorage(KEYS.SESSION, user);
+      return user;
+    }
   }
 
   // 2. Check Supabase Auth
@@ -962,6 +984,7 @@ export const registerAdminStaff = async (data: {
   identityCard?: string;
   position?: string;
   department?: string;
+  password: string;
 }) => {
   const { data: inserted, error } = await supabase
     .from('admin_staff')
@@ -972,6 +995,7 @@ export const registerAdminStaff = async (data: {
       identity_card: data.identityCard,
       position: data.position,
       department: data.department,
+      password: data.password,
       status: 'pending_approval'
     }])
     .select()

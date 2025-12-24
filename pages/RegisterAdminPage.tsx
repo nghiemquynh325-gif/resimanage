@@ -61,6 +61,7 @@ const RegisterAdminPage: React.FC = () => {
                 identityCard: data.identityCard,
                 position: data.position,
                 department: data.department,
+                password: data.password,
             });
 
             navigate('/registration-pending');
