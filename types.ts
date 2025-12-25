@@ -31,6 +31,7 @@ export interface Resident {
   specialNotes?: string;
   rejectionReason?: string; // Lý do từ chối
   createdAt?: string; // New field for creation date
+  hasVoted?: boolean; // Voting tracker
 }
 
 export interface Household {
@@ -122,6 +123,60 @@ export interface AdminStaff {
   department?: string; // Phòng ban
   status: 'pending_approval' | 'approved' | 'rejected';
   rejectionReason?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Association Management Types
+export type AssociationType = 'veterans' | 'women' | 'youth' | 'red_cross' | 'discharged_military' | 'party_member_213';
+export type AssociationRole = 'president' | 'vice_president' | 'member';
+
+export interface Association {
+  id: string;
+  name: string;
+  type: AssociationType;
+  description?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AssociationMember {
+  id: string;
+  associationId: string;
+  residentId: string;
+  role: AssociationRole;
+  joinedDate: string;
+  createdAt: string;
+  updatedAt?: string;
+  // Populated fields
+  resident?: Resident;
+  militaryInfo?: MilitaryInfo;
+  partyMemberInfo?: PartyMemberInfo;
+}
+
+// Military Information for Discharged Military Association
+export interface MilitaryInfo {
+  id: string;
+  associationMemberId: string;
+  enlistmentDate?: string; // Ngày nhập ngũ
+  dischargeDate?: string; // Ngày xuất ngũ
+  rank?: string; // Cấp bậc
+  position?: string; // Chức vụ
+  militarySpecialty?: string; // Chuyên nghiệp quân sự
+  lastUnit?: string; // Đơn vị trước khi xuất ngũ
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PartyMemberInfo {
+  id: string;
+  associationMemberId: string;
+  workplace?: string;
+  introductionDate?: string;
+  partyJoinDate?: string;
+  officialDate?: string;
+  partyActivities?: string;
+  partyNotes?: string;
   createdAt: string;
   updatedAt?: string;
 }

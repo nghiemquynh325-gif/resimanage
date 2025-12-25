@@ -38,8 +38,6 @@ const ResidentsPage: React.FC = () => {
   const [filterSpecial, setFilterSpecial] = useState('all');
   const [filterEthnicity, setFilterEthnicity] = useState('all');
   const [filterReligion, setFilterReligion] = useState('all');
-  const [filterUnit, setFilterUnit] = useState('all'); // New: Filter by Tổ
-  const [filterVotingStatus, setFilterVotingStatus] = useState('all'); // New: Filter by voting status
 
   // UI State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -60,7 +58,6 @@ const ResidentsPage: React.FC = () => {
 
   // Voting Statistics State
   const [votingStats, setVotingStats] = useState<Record<string, { total: number; voted: number; percentage: number }>>({});
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
   // Helper: Show Toast
   const showToast = (message: string, type: 'success' | 'error') => {
@@ -86,22 +83,9 @@ const ResidentsPage: React.FC = () => {
         limit: ITEMS_PER_PAGE
       });
 
-      // Apply client-side filters for unit and voting status
-      let filteredData = response.data;
-
-      if (filterUnit !== 'all') {
-        filteredData = filteredData.filter(r => r.unit === filterUnit);
-      }
-
-      if (filterVotingStatus === 'voted') {
-        filteredData = filteredData.filter(r => r.hasVoted === true);
-      } else if (filterVotingStatus === 'not_voted') {
-        filteredData = filteredData.filter(r => !r.hasVoted);
-      }
-
-      setResidents(filteredData);
+      setResidents(response.data);
       setTotalPages(response.totalPages);
-      setTotalRecords(filteredData.length);
+      setTotalRecords(response.total);
     } catch (err: any) {
       setError('Có lỗi xảy ra khi tải dữ liệu cư dân.');
       setResidents([]);
@@ -116,7 +100,7 @@ const ResidentsPage: React.FC = () => {
       fetchResidents();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, currentPage]);
+  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, currentPage]);
 
   // Load voting statistics
   useEffect(() => {
@@ -183,8 +167,6 @@ const ResidentsPage: React.FC = () => {
     setFilterSpecial('all');
     setFilterEthnicity('all');
     setFilterReligion('all');
-    setFilterUnit('all');
-    setFilterVotingStatus('all');
     setCurrentPage(1);
   };
 
@@ -216,8 +198,6 @@ const ResidentsPage: React.FC = () => {
     if (filterSpecial !== 'all') count++;
     if (filterEthnicity !== 'all') count++;
     if (filterReligion !== 'all') count++;
-    if (filterUnit !== 'all') count++;
-    if (filterVotingStatus !== 'all') count++;
     return count;
   };
 
@@ -475,6 +455,7 @@ const ResidentsPage: React.FC = () => {
     "Họ và Tên",
     "Tổ",
     "Đã bỏ phiếu",
+    "Email",
     "Số điện thoại",
     "Địa chỉ",
     "Loại cư trú",
@@ -493,67 +474,25 @@ const ResidentsPage: React.FC = () => {
       {/* Toolbar - Compact Design with Collapsible Filters */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex flex-col gap-4">
 
-        {/* Voting Statistics - Dropdown Selector */}
+        {/* Voting Statistics */}
         {Object.keys(votingStats).length > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <label className="text-sm font-semibold text-slate-700 whitespace-nowrap">Thống kê bỏ phiếu:</label>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <select
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-white border border-blue-300 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm min-w-[200px]"
-              >
-                <option value="all">Tất cả các Tổ</option>
-                {Object.entries(votingStats)
-                  .filter(([group]) => group !== 'Không có tổ')
-                  .sort(([a], [b]) => {
-                    // Extract numbers for proper numeric sorting
-                    const numA = parseInt(a.replace(/\D/g, '')) || 0;
-                    const numB = parseInt(b.replace(/\D/g, '')) || 0;
-                    return numA - numB;
-                  })
-                  .map(([group]) => {
-                    // Add 'Tổ' prefix if not already present
-                    const displayName = group.toLowerCase().startsWith('tổ')
-                      ? group
-                      : `Tổ ${group}`;
-                    return (
-                      <option key={group} value={group}>{displayName}</option>
-                    );
-                  })}
-              </select>
-
-
-              {selectedGroup === 'all' ? (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 shadow-sm">
-                  <span className="text-sm font-semibold text-blue-900">Tổng:</span>
-                  <span className="text-sm text-blue-700">
-                    {(() => {
-                      const totalVoted = Object.values(votingStats).reduce((acc, s) => acc + (s as any).voted, 0);
-                      const totalResidents = Object.values(votingStats).reduce((acc, s) => acc + (s as any).total, 0);
-                      const percentage = (totalResidents as number) > 0 ? Math.round((totalVoted / totalResidents) * 100) : 0;
-
-                      return (
-                        <>
-                          {totalVoted.toLocaleString()}/{totalResidents.toLocaleString()}
-                          <span className="ml-1 font-medium">({percentage}%)</span>
-                        </>
-                      );
-                    })()}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className="text-sm font-semibold text-slate-700">Thống kê bỏ phiếu:</span>
+            {Object.entries(votingStats)
+              .filter(([group]) => group !== 'Không có tổ')
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([group, stats]) => (
+                <div 
+                  key={group} 
+                  className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-200"
+                >
+                  <span className="font-semibold text-blue-900">{group}:</span>
+                  <span className="text-blue-700">
+                    {stats.voted}/{stats.total}
+                    <span className="ml-1 text-blue-600 font-medium">({stats.percentage}%)</span>
                   </span>
                 </div>
-              ) : (
-                votingStats[selectedGroup] && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 shadow-sm">
-                    <span className="text-sm font-semibold text-blue-900">{selectedGroup}:</span>
-                    <span className="text-sm text-blue-700">
-                      {votingStats[selectedGroup].voted}/{votingStats[selectedGroup].total}
-                      <span className="ml-1 font-medium">({votingStats[selectedGroup].percentage}%)</span>
-                    </span>
-                  </div>
-                )
-              )}
-            </div>
+              ))}
           </div>
         )}
 
@@ -604,8 +543,8 @@ const ResidentsPage: React.FC = () => {
           <button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isFilterOpen
-              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-              : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
               }`}
           >
             <Filter size={16} />
@@ -768,45 +707,6 @@ const ResidentsPage: React.FC = () => {
                 <option value="Hồi giáo">Hồi giáo</option>
               </select>
             </div>
-
-            {/* Unit (Tổ) Filter */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Tổ</label>
-              <select
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                value={filterUnit}
-                onChange={(e) => { setFilterUnit(e.target.value); setCurrentPage(1); }}
-              >
-                <option value="all">Tất cả các Tổ</option>
-                {Object.keys(votingStats)
-                  .filter(unit => unit !== 'Không có tổ')
-                  .sort((a, b) => {
-                    // Extract numbers from strings for proper numeric sorting
-                    const numA = parseInt(a.replace(/\D/g, '')) || 0;
-                    const numB = parseInt(b.replace(/\D/g, '')) || 0;
-                    return numA - numB;
-                  })
-                  .map(unit => (
-                    <option key={unit} value={unit}>
-                      {unit.toLowerCase().startsWith('tổ') ? unit : `Tổ ${unit}`}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            {/* Voting Status Filter */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Trạng thái bỏ phiếu</label>
-              <select
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                value={filterVotingStatus}
-                onChange={(e) => { setFilterVotingStatus(e.target.value); setCurrentPage(1); }}
-              >
-                <option value="all">Tất cả</option>
-                <option value="voted">Đã bỏ phiếu</option>
-                <option value="not_voted">Chưa bỏ phiếu</option>
-              </select>
-            </div>
           </div>
         )}
       </div>
@@ -830,13 +730,13 @@ const ResidentsPage: React.FC = () => {
             ))
           ) : error ? (
             <tr>
-              <td colSpan={8} className="px-6 py-10 text-center text-red-500">
+              <td colSpan={9} className="px-6 py-10 text-center text-red-500">
                 {error}
               </td>
             </tr>
           ) : residents.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
+              <td colSpan={9} className="px-6 py-10 text-center text-slate-500">
                 Không tìm thấy dữ liệu phù hợp.
               </td>
             </tr>
@@ -865,29 +765,27 @@ const ResidentsPage: React.FC = () => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">
-                  {resident.unit
-                    ? (() => {
-                      const unit = resident.unit.toString();
-                      // Add 'Tổ' prefix if not already present
-                      return unit.toLowerCase().startsWith('tổ') ? unit : `Tổ ${unit}`;
-                    })()
-                    : 'N/A'}
+                  {resident.unit || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     onClick={() => handleToggleVote(resident.id, resident.hasVoted || false)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${resident.hasVoted ? 'bg-green-500' : 'bg-gray-300'
-                      }`}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      resident.hasVoted ? 'bg-green-500' : 'bg-gray-300'
+                    }`}
                     aria-label={resident.hasVoted ? 'Đã bỏ phiếu' : 'Chưa bỏ phiếu'}
                     title={resident.hasVoted ? 'Click để bỏ đánh dấu' : 'Click để đánh dấu đã bỏ phiếu'}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${resident.hasVoted ? 'translate-x-6' : 'translate-x-1'
-                        }`}
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        resident.hasVoted ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                     />
                   </button>
                 </td>
-
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {resident.email || 'N/A'}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {resident.phoneNumber}
                 </td>

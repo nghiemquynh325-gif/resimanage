@@ -12,6 +12,7 @@ import AdminDashboardPage from './pages/admin/dashboard';
 import ResidentsPage from './pages/admin/residents/index';
 import ApprovalsPage from './pages/admin/approvals';
 import HouseholdsPage from './pages/admin/households/index';
+import AssociationsPage from './pages/admin/associations/index';
 import EventsPage from './pages/admin/events';
 import Community from './components/Community';
 import ResidentHomePage from './pages/resident/home';
@@ -83,6 +84,7 @@ const router = createHashRouter([
               { path: "dashboard", element: <AdminDashboardPage /> },
               { path: "residents", element: <ResidentsPage /> },
               { path: "households", element: <HouseholdsPage /> },
+              { path: "associations", element: <AssociationsPage /> },
               { path: "approvals", element: <ApprovalsPage /> },
             ]
           },

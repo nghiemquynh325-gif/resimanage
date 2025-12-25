@@ -18,7 +18,7 @@ const residentSchema = z.object({
   identityCard: z.string().min(9, "CCCD/CMND phải có 9-12 số").max(12, "CCCD/CMND không hợp lệ"),
   dob: z.string().refine((date) => new Date(date).toString() !== 'Invalid Date', { message: "Ngày sinh không hợp lệ" }),
   gender: z.enum(['Nam', 'Nữ', 'Khác']),
-  status: z.enum(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Tạm trú có nhà', 'active', 'inactive']),
+  residenceType: z.enum(['Thường trú', 'Tạm trú', 'Tạm vắng', 'Tạm trú có nhà']),
   address: z.string().optional(), // Full formatted address (auto-filled or manual)
   street: z.string().min(2, "Vui lòng nhập số nhà, tên đường"),
   province: z.string().min(1, "Vui lòng chọn Tỉnh/Thành phố"),
@@ -60,7 +60,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
     resolver: zodResolver(residentSchema),
     defaultValues: {
       gender: 'Nam',
-      status: 'Thường trú',
+      residenceType: 'Thường trú',
       isHeadOfHousehold: false,
       isPartyMember: false,
       hasSpecialNotes: false,
@@ -74,7 +74,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
   const isPartyMember = watch('isPartyMember');
   const selectedProvince = watch('province');
   const selectedWard = watch('ward');
-  
+
   // Derived state for wards based on selected province
   const availableWards = selectedProvince ? ADDRESS_DATA[selectedProvince] || [] : [];
 
@@ -93,7 +93,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
           identityCard: initialData.identityCard || '',
           dob: initialData.dob,
           gender: initialData.gender,
-          status: initialData.status,
+          residenceType: initialData.residenceType || 'Thường trú',
           street: street,
           province: province,
           ward: ward,
@@ -119,7 +119,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
           identityCard: '',
           dob: '',
           gender: 'Nam',
-          status: 'Thường trú',
+          residenceType: 'Thường trú',
           street: '',
           province: '',
           ward: '',
@@ -146,10 +146,10 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
     // If the currently selected ward is not in the new province's list, reset it
     const currentWard = watch('ward');
     if (selectedProvince && currentWard) {
-       const wards = ADDRESS_DATA[selectedProvince] || [];
-       if (!wards.includes(currentWard)) {
-         setValue('ward', '');
-       }
+      const wards = ADDRESS_DATA[selectedProvince] || [];
+      if (!wards.includes(currentWard)) {
+        setValue('ward', '');
+      }
     }
   }, [selectedProvince, setValue, watch]);
 
@@ -163,6 +163,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
       const payload = {
         ...data,
         address: fullAddress, // Override composite address
+        status: 'active' as 'active' | 'inactive' | 'pending_approval' | 'rejected',
         specialNotes: data.hasSpecialNotes ? data.specialNotes : undefined,
         partyJoinDate: data.isPartyMember ? data.partyJoinDate : undefined,
       };
@@ -177,7 +178,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
           avatar: '', // generated in backend/mock
         });
       }
-      
+
       onSuccess(); // Trigger parent refresh
       onClose();   // Close modal
     } catch (error: any) {
@@ -203,37 +204,37 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
 
         {/* Basic Info */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input 
-            label="Họ và tên *" 
-            {...register('fullName')} 
-            error={errors.fullName?.message} 
+          <Input
+            label="Họ và tên *"
+            {...register('fullName')}
+            error={errors.fullName?.message}
           />
-          <Input 
-            label="Email" 
-            type="email" 
-            {...register('email')} 
-            error={errors.email?.message} 
+          <Input
+            label="Email"
+            type="email"
+            {...register('email')}
+            error={errors.email?.message}
           />
-          <Input 
-            label="Số điện thoại *" 
-            {...register('phoneNumber')} 
-            error={errors.phoneNumber?.message} 
+          <Input
+            label="Số điện thoại *"
+            {...register('phoneNumber')}
+            error={errors.phoneNumber?.message}
           />
-          <Input 
-            label="Số CCCD/CMND *" 
-            {...register('identityCard')} 
-            error={errors.identityCard?.message} 
+          <Input
+            label="Số CCCD/CMND *"
+            {...register('identityCard')}
+            error={errors.identityCard?.message}
           />
-          <Input 
-            label="Ngày sinh *" 
-            type="date" 
-            {...register('dob')} 
-            error={errors.dob?.message} 
+          <Input
+            label="Ngày sinh *"
+            type="date"
+            {...register('dob')}
+            error={errors.dob?.message}
           />
-          
+
           <div className="w-full">
             <label className="block text-sm font-medium text-slate-700 mb-1">Giới tính *</label>
-            <select 
+            <select
               {...register('gender')}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -252,9 +253,9 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
             <Input label="Tôn giáo" {...register('religion')} />
             <Input label="Quê quán" {...register('hometown')} />
             <div className="md:col-span-2">
-               <Input label="Trình độ văn hóa" {...register('education')} placeholder="Ví dụ: 12/12, Đại học..." />
+              <Input label="Trình độ văn hóa" {...register('education')} placeholder="Ví dụ: 12/12, Đại học..." />
             </div>
-             <Input label="Chuyên môn" {...register('profession')} placeholder="Ví dụ: Kỹ sư, Bác sĩ..." />
+            <Input label="Chuyên môn" {...register('profession')} placeholder="Ví dụ: Kỹ sư, Bác sĩ..." />
           </div>
         </div>
 
@@ -262,49 +263,52 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
         <div className="border-t border-slate-100 pt-4">
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Nơi ở & Cư trú</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {/* Province Searchable Select */}
-             <SearchableSelect
-               label="Tỉnh/Thành phố *"
-               options={Object.keys(ADDRESS_DATA)}
-               value={selectedProvince}
-               onChange={(val) => {
-                 setValue('province', val, { shouldValidate: true });
-                 setValue('ward', '', { shouldValidate: true }); // Reset ward when province changes
-               }}
-               placeholder="-- Chọn Tỉnh/TP --"
-               error={errors.province?.message}
-             />
+            {/* Province Searchable Select */}
+            <SearchableSelect
+              label="Tỉnh/Thành phố *"
+              options={Object.keys(ADDRESS_DATA)}
+              value={selectedProvince}
+              onChange={(val) => {
+                setValue('province', val, { shouldValidate: true });
+                setValue('ward', '', { shouldValidate: true }); // Reset ward when province changes
+              }}
+              placeholder="-- Chọn Tỉnh/TP --"
+              error={errors.province?.message}
+            />
 
-             {/* Ward Searchable Select */}
-             <SearchableSelect
-               label="Xã/Phường *"
-               options={availableWards}
-               value={selectedWard}
-               onChange={(val) => setValue('ward', val, { shouldValidate: true })}
-               placeholder="-- Chọn Xã/Phường --"
-               error={errors.ward?.message}
-               disabled={!selectedProvince}
-             />
+            {/* Ward Searchable Select */}
+            <SearchableSelect
+              label="Xã/Phường *"
+              options={availableWards}
+              value={selectedWard}
+              onChange={(val) => setValue('ward', val, { shouldValidate: true })}
+              placeholder="-- Chọn Xã/Phường --"
+              error={errors.ward?.message}
+              disabled={!selectedProvince}
+            />
 
-             <div className="md:col-span-2">
-               <Input 
-                 label="Số nhà, tên đường *" 
-                 placeholder="Ví dụ: 123 Đường Nguyễn Huệ..."
-                 {...register('street')} 
-                 error={errors.street?.message} 
-               />
-             </div>
-             
-             <Input 
-               label="Tổ dân phố *" 
-               {...register('unit')} 
-               error={errors.unit?.message} 
-               placeholder="Nhập số tổ..."
-             />
-             <div className="w-full">
+            <div className="md:col-span-2">
+              <Input
+                label="Số nhà, tên đường *"
+                placeholder="Ví dụ: 123 Đường Nguyễn Huệ..."
+                {...register('street')}
+                error={errors.street?.message}
+              />
+            </div>
+
+            <Input
+              label="Tổ dân phố *"
+              type="number"
+              {...register('unit')}
+              error={errors.unit?.message}
+              placeholder="Nhập số tổ..."
+              min="1"
+              step="1"
+            />
+            <div className="w-full">
               <label className="block text-sm font-medium text-slate-700 mb-1">Trạng thái cư trú *</label>
-              <select 
-                {...register('status')}
+              <select
+                {...register('residenceType')}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="Thường trú">Thường trú</option>
@@ -312,6 +316,7 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
                 <option value="Tạm trú có nhà">Tạm trú có nhà</option>
                 <option value="Tạm vắng">Tạm vắng</option>
               </select>
+              {errors.residenceType && <p className="text-xs text-red-600 mt-1">{errors.residenceType.message}</p>}
             </div>
           </div>
         </div>
@@ -319,50 +324,50 @@ const ResidentFormModal: React.FC<ResidentFormModalProps> = ({ isOpen, onClose, 
         {/* Extra Flags */}
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4">
           <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              {...register('isHeadOfHousehold')} 
+            <input
+              type="checkbox"
+              {...register('isHeadOfHousehold')}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-slate-700 font-medium">Là Chủ hộ</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              {...register('isPartyMember')} 
+            <input
+              type="checkbox"
+              {...register('isPartyMember')}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-slate-700 font-medium">Là Đảng viên</span>
           </label>
-          
+
           {isPartyMember && (
-             <div className="animate-in fade-in slide-in-from-top-2 ml-6">
-               <Input 
-                 label="Ngày vào Đảng" 
-                 type="date"
-                 {...register('partyJoinDate')}
-               />
-             </div>
+            <div className="animate-in fade-in slide-in-from-top-2 ml-6">
+              <Input
+                label="Ngày vào Đảng"
+                type="date"
+                {...register('partyJoinDate')}
+              />
+            </div>
           )}
 
           <label className="flex items-center gap-2 cursor-pointer">
-            <input 
-              type="checkbox" 
-              {...register('hasSpecialNotes')} 
+            <input
+              type="checkbox"
+              {...register('hasSpecialNotes')}
               className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
             />
             <span className="text-sm text-slate-700 font-medium">Đặc điểm (Ghi chú thêm)</span>
           </label>
 
           {hasSpecialNotes && (
-             <div className="animate-in fade-in slide-in-from-top-2">
-               <textarea 
-                  {...register('specialNotes')}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
-                  placeholder="Nhập ghi chú đặc biệt (ví dụ: Gia đình chính sách, người có công...)"
-               />
-             </div>
+            <div className="animate-in fade-in slide-in-from-top-2">
+              <textarea
+                {...register('specialNotes')}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+                placeholder="Nhập ghi chú đặc biệt (ví dụ: Gia đình chính sách, người có công...)"
+              />
+            </div>
           )}
         </div>
 

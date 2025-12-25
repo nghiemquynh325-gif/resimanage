@@ -124,6 +124,7 @@ const mapResidentFromDb = (data: any): Resident => {
     specialNotes: data.special_notes || data.specialNotes,
     rejectionReason: data.rejection_reason || data.rejectionReason,
     createdAt: data.created_at || data.createdAt,
+    hasVoted: data.has_voted || false,
   };
 };
 
@@ -606,6 +607,86 @@ export const deleteResident = async (id: string) => {
   if (error) throw new Error(error.message);
 };
 
+/**
+ * Toggle voting status for a resident
+ */
+export const toggleVote = async (residentId: string, hasVoted: boolean) => {
+  const { data, error } = await supabase
+    .from('residents')
+    .update({ has_voted: hasVoted })
+    .eq('id', residentId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapResidentFromDb(data);
+};
+
+/**
+ * Get voting statistics grouped by Tổ - WITH PAGINATION
+ * Bypasses Supabase 1000-row limit
+ */
+export const getVotingStats = async () => {
+  console.log('🔍 Fetching voting stats with pagination...');
+
+  let allData: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  let hasMore = true;
+
+  // Fetch ALL residents using pagination
+  while (hasMore) {
+    const start = page * pageSize;
+    const end = start + pageSize - 1;
+
+    const { data, error } = await supabase
+      .from('residents')
+      .select('unit, has_voted')
+      .range(start, end);
+
+    if (error) {
+      console.error('Error fetching page', page, error);
+      throw new Error(error.message);
+    }
+
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      console.log(`📄 Page ${page + 1}: Fetched ${data.length} residents (Total: ${allData.length})`);
+      page++;
+      hasMore = data.length === pageSize;
+    } else {
+      hasMore = false;
+    }
+  }
+
+  console.log(`✅ Total residents fetched: ${allData.length}`);
+
+  // Group by Tổ and calculate stats
+  const stats: Record<string, { total: number; voted: number; percentage: number }> = {};
+
+  allData.forEach((resident: any) => {
+    const group = resident.unit || 'Không có tổ';
+
+    if (!stats[group]) {
+      stats[group] = { total: 0, voted: 0, percentage: 0 };
+    }
+
+    stats[group].total++;
+    if (resident.has_voted) {
+      stats[group].voted++;
+    }
+  });
+
+  // Calculate percentages
+  Object.keys(stats).forEach(group => {
+    const { total, voted } = stats[group];
+    stats[group].percentage = total > 0 ? Math.round((voted / total) * 100) : 0;
+  });
+
+  console.log('📊 Final stats:', stats);
+  return stats;
+};
+
 // --- Households (HYBRID: SUPABASE + LOCAL STORAGE FALLBACK) ---
 
 export const getHouseholds = async () => {
@@ -1071,3 +1152,205 @@ export const rejectAdminStaff = async (id: string, reason: string) => {
   if (error) throw new Error(error.message);
   return data;
 };
+
+// ============================================
+// ASSOCIATION MANAGEMENT FUNCTIONS
+// ============================================
+
+/**
+ * Get all associations (4 types: veterans, women, youth, red_cross)
+ */
+export async function getAssociations() {
+  const { data, error } = await supabase
+    .from('associations')
+    .select('*')
+    .order('type');
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get all members of an association with resident details
+ * Sorted by role: president -> vice_president -> member
+ * For discharged_military association, also fetch military_info
+ */
+export async function getAssociationMembers(associationId: string) {
+  const { data, error } = await supabase
+    .from('association_members')
+    .select(`
+      *,
+      resident:residents(*),
+      military_info:military_info(*),
+      party_member_info:party_member_info(*)
+    `)
+    .eq('association_id', associationId);
+
+  if (error) throw error;
+
+  // Map data and transform resident info
+  const mappedData = (data || []).map((member: any) => ({
+    id: member.id,
+    associationId: member.association_id,
+    residentId: member.resident_id,
+    role: member.role,
+    joinedDate: member.joined_date,
+    createdAt: member.created_at,
+    updatedAt: member.updated_at,
+    // Map nested resident data
+    resident: member.resident ? mapResidentFromDb(member.resident) : undefined,
+    // Map military info if exists (for discharged_military association)
+    militaryInfo: member.military_info ? {
+      id: member.military_info.id,
+      associationMemberId: member.military_info.association_member_id,
+      enlistmentDate: member.military_info.enlistment_date,
+      dischargeDate: member.military_info.discharge_date,
+      rank: member.military_info.rank,
+      position: member.military_info.position,
+      militarySpecialty: member.military_info.military_specialty,
+      lastUnit: member.military_info.last_unit,
+      createdAt: member.military_info.created_at,
+      updatedAt: member.military_info.updated_at,
+    } : undefined,
+    // Map party member info if exists (for party_member_213 association)
+    partyMemberInfo: member.party_member_info ? {
+      id: member.party_member_info.id,
+      associationMemberId: member.party_member_info.association_member_id,
+      workplace: member.party_member_info.workplace,
+      introductionDate: member.party_member_info.introduction_date,
+      partyJoinDate: member.party_member_info.party_join_date,
+      officialDate: member.party_member_info.official_date,
+      partyActivities: member.party_member_info.party_activities,
+      partyNotes: member.party_member_info.party_notes,
+      createdAt: member.party_member_info.created_at,
+      updatedAt: member.party_member_info.updated_at,
+    } : undefined,
+  }));
+
+  // Sort by role priority
+  const roleOrder = { president: 1, vice_president: 2, member: 3 };
+  const sortedData = mappedData.sort((a, b) => {
+    return roleOrder[a.role] - roleOrder[b.role];
+  });
+
+  return sortedData;
+}
+
+/**
+ * Add a resident to an association
+ */
+export async function addAssociationMember(
+  associationId: string,
+  residentId: string,
+  role: 'president' | 'vice_president' | 'member' = 'member'
+) {
+  const { data, error } = await supabase
+    .from('association_members')
+    .insert({
+      association_id: associationId,
+      resident_id: residentId,
+      role: role,
+      joined_date: new Date().toISOString().split('T')[0]
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Update member role (e.g., promote to vice_president or president)
+ */
+export async function updateMemberRole(
+  memberId: string,
+  newRole: 'president' | 'vice_president' | 'member'
+) {
+  const { data, error } = await supabase
+    .from('association_members')
+    .update({
+      role: newRole,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', memberId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Remove a member from an association
+ */
+export async function removeMemberFromAssociation(memberId: string) {
+  const { error } = await supabase
+    .from('association_members')
+    .delete()
+    .eq('id', memberId);
+
+  if (error) throw error;
+}
+
+/**
+ * Add military information for a discharged military association member
+ */
+export async function addMilitaryInfo(
+  associationMemberId: string,
+  militaryData: {
+    enlistmentDate?: string;
+    dischargeDate?: string;
+    rank?: string;
+    position?: string;
+    militarySpecialty?: string;
+    lastUnit?: string;
+  }
+) {
+  const { data, error } = await supabase
+    .from('military_info')
+    .insert({
+      association_member_id: associationMemberId,
+      enlistment_date: militaryData.enlistmentDate || null,
+      discharge_date: militaryData.dischargeDate || null,
+      rank: militaryData.rank || null,
+      position: militaryData.position || null,
+      military_specialty: militaryData.militarySpecialty || null,
+      last_unit: militaryData.lastUnit || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Add party member information for a party_member_213 association member
+ */
+export async function addPartyMemberInfo(
+  associationMemberId: string,
+  partyData: {
+    workplace?: string;
+    introductionDate?: string;
+    partyActivities?: string;
+    partyNotes?: string;
+  }
+) {
+  const { data, error } = await supabase
+    .from('party_member_info')
+    .insert({
+      association_member_id: associationMemberId,
+      workplace: partyData.workplace || null,
+      introduction_date: partyData.introductionDate || null,
+      party_join_date: partyData.partyJoinDate || null,
+      official_date: partyData.officialDate || null,
+      party_activities: partyData.partyActivities || null,
+      party_notes: partyData.partyNotes || null,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+

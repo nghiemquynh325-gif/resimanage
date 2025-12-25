@@ -21,13 +21,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, roles: ['ADMIN'] },
     { id: 'residents', label: 'Quản lý Cư dân', icon: Users, roles: ['ADMIN'] },
     { id: 'households', label: 'Quản lý Hộ gia đình', icon: Home, roles: ['ADMIN'] },
+    { id: 'associations', label: 'Quản lý Chi Hội', icon: Users, roles: ['ADMIN'] },
     { id: 'approvals', label: 'Phê duyệt', icon: FileCheck, roles: ['ADMIN'] },
-    
+
     // --- Resident Items ---
     { id: 'profile', label: 'Thông tin cá nhân', icon: UserCircle, roles: ['RESIDENT'] },
-    
+
     // --- Shared Items ---
-    { id: 'events', label: 'Lịch & Công tác', icon: Calendar, roles: ['ADMIN', 'RESIDENT'] }, 
+    { id: 'events', label: 'Lịch & Công tác', icon: Calendar, roles: ['ADMIN', 'RESIDENT'] },
     { id: 'community', label: 'Cộng đồng', icon: MessageSquare, roles: ['ADMIN', 'RESIDENT'] },
   ];
 
@@ -46,18 +47,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
   return (
     <>
       {/* Mobile Overlay */}
-      <div 
-        className={`fixed inset-0 z-20 bg-black/30 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+      <div
+        className={`fixed inset-0 z-20 bg-black/30 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
         onClick={toggleSidebar}
       />
 
       {/* Sidebar Container */}
-      <aside 
-        className={`fixed top-0 left-0 z-30 h-screen w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col shadow-xl lg:shadow-none ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      <aside
+        className={`fixed top-0 left-0 z-30 h-screen w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out lg:translate-x-0 flex flex-col shadow-xl lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         {/* Logo Area */}
         <div className="flex items-center justify-between lg:justify-center h-16 border-b border-slate-200 flex-shrink-0 px-4 lg:px-0">
@@ -65,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
             ResiManage
           </h1>
           {/* Close Button (Mobile Only) */}
-          <button 
+          <button
             onClick={toggleSidebar}
             className="p-1 text-slate-500 hover:bg-slate-100 rounded-lg lg:hidden transition-colors"
           >
@@ -83,11 +82,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
                   onChangeView(item.id);
                   if (window.innerWidth < 1024) toggleSidebar();
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                  currentView === item.id
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${currentView === item.id
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <item.icon size={20} className={currentView === item.id ? 'text-blue-600' : 'text-slate-400'} />
                 {item.label}
@@ -99,9 +97,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
         {/* User Info & Logout */}
         <div className="p-4 border-t border-slate-200 bg-slate-50/50">
           <div className="flex items-center gap-3 mb-4">
-            <img 
+            <img
               src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.fullName || 'User'}&background=0D8ABC&color=fff`}
-              alt="User Avatar" 
+              alt="User Avatar"
               className="w-10 h-10 rounded-full border border-slate-200 object-cover"
             />
             <div className="overflow-hidden">
@@ -113,7 +111,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, role, isOp
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={handleLogoutClick}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
