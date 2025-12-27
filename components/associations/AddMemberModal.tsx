@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Search, UserPlus } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { X, Search, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Resident, AssociationRole, AssociationType } from '../../types';
-import { getAllResidents } from '../../utils/mockApi';
+import { getResidents } from '../../utils/mockApi';
 
 interface AddMemberModalProps {
     isOpen: boolean;
@@ -21,12 +21,16 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
     associationType,
 }) => {
     const [residents, setResidents] = useState<Resident[]>([]);
-    const [filteredResidents, setFilteredResidents] = useState<Resident[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
     const [selectedRole, setSelectedRole] = useState<AssociationRole>('member');
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const ITEMS_PER_PAGE = 20; // Limit to 20 items per page for better performance
 
     // Military info state (for discharged_military association)
     const [militaryInfo, setMilitaryInfo] = useState({
@@ -48,45 +52,68 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
         partyNotes: '',
     });
 
-    useEffect(() => {
-        if (isOpen) {
-            loadResidents();
-        }
-    }, [isOpen]);
-
-    useEffect(() => {
-        // Filter residents based on search query and exclude existing members
-        const filtered = residents.filter(
-            (r) =>
-                !existingMemberIds.includes(r.id) &&
-                (r.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    r.phoneNumber?.includes(searchQuery))
-        );
-        setFilteredResidents(filtered);
-
-        // Debug logging
-        if (searchQuery) {
-            console.log('Search query:', searchQuery);
-            console.log('Total residents loaded:', residents.length);
-            console.log('Existing member IDs:', existingMemberIds);
-            console.log('Filtered results:', filtered.length);
-        }
-    }, [searchQuery, residents, existingMemberIds]);
-
-    const loadResidents = async () => {
+    // Define loadResidents function first
+    const loadResidents = useCallback(async () => {
         try {
             setIsLoading(true);
-            // Use getAllResidents to fetch ALL residents without any filters
-            const allResidents = await getAllResidents();
-            setResidents(allResidents);
-            console.log('Loaded ALL residents:', allResidents.length);
-            console.log('Sample resident:', allResidents[0]);
+            // Use getResidents with pagination and search for better performance
+            const response = await getResidents({
+                search: debouncedSearchQuery || undefined,
+                page: currentPage,
+                limit: ITEMS_PER_PAGE,
+                // Show all residents, not just active ones
+            });
+
+            setResidents(response.data);
+            setTotalPages(response.totalPages);
+            setTotalRecords(response.total);
         } catch (error) {
             console.error('Failed to load residents:', error);
+            setResidents([]);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [debouncedSearchQuery, currentPage]);
+
+    // Debounce search query to avoid too many API calls
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+            setCurrentPage(1); // Reset to page 1 when search changes
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Reset state when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setSearchQuery('');
+            setDebouncedSearchQuery('');
+            setSelectedResident(null);
+            setSelectedRole('member');
+            setCurrentPage(1);
+            setResidents([]);
+        }
+    }, [isOpen]);
+
+    // Load residents when modal opens or search/page changes
+    // OPTIMIZATION: Only load when user has entered a search query
+    useEffect(() => {
+        if (isOpen && debouncedSearchQuery.trim().length > 0) {
+            loadResidents();
+        } else if (isOpen && debouncedSearchQuery.trim().length === 0) {
+            // Clear residents when search is empty
+            setResidents([]);
+            setTotalPages(1);
+            setTotalRecords(0);
+        }
+    }, [isOpen, debouncedSearchQuery, currentPage, loadResidents]);
+
+    // Memoize filtered residents to exclude existing members
+    const filteredResidents = useMemo(() => {
+        return residents.filter(r => !existingMemberIds.includes(r.id));
+    }, [residents, existingMemberIds]);
 
     const handleSubmit = async () => {
         if (!selectedResident) return;
@@ -108,10 +135,13 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
             ) ? partyMemberInfo : undefined;
 
             await onAdd(selectedResident.id, selectedRole, militaryData, partyData);
-            onClose();
+            // Don't close modal immediately, allow adding multiple members
             setSelectedResident(null);
             setSearchQuery('');
+            setDebouncedSearchQuery('');
             setSelectedRole('member');
+            // Reload residents to update the list (existing members will be filtered out)
+            await loadResidents();
             setMilitaryInfo({
                 enlistmentDate: '',
                 dischargeDate: '',
@@ -174,45 +204,78 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                     {isLoading ? (
                         <div className="text-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="text-gray-600 mt-2">Đang tải...</p>
+                            <p className="text-gray-600 mt-2">Đang tìm kiếm...</p>
+                        </div>
+                    ) : debouncedSearchQuery.trim().length === 0 ? (
+                        <div className="text-center py-12">
+                            <Search className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                            <p className="text-gray-600 font-medium">Nhập tên hoặc số điện thoại để tìm kiếm</p>
+                            <p className="text-gray-500 text-sm mt-1">Kết quả sẽ hiển thị ở đây</p>
                         </div>
                     ) : filteredResidents.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-gray-500">
-                                {searchQuery
-                                    ? 'Không tìm thấy cư dân phù hợp'
-                                    : 'Tất cả cư dân đã tham gia hội này'}
-                            </p>
+                            <p className="text-gray-500">Không tìm thấy cư dân phù hợp</p>
+                            <p className="text-gray-400 text-sm mt-1">Thử tìm kiếm với từ khóa khác</p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            {filteredResidents.map((resident) => (
-                                <button
-                                    key={resident.id}
-                                    onClick={() => setSelectedResident(resident)}
-                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${selectedResident?.id === resident.id
-                                        ? 'border-blue-500 bg-blue-50'
-                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    <img
-                                        src={resident.avatar}
-                                        alt={resident.fullName}
-                                        className="h-10 w-10 rounded-full object-cover border border-gray-200"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${resident.fullName}&background=random`;
-                                        }}
-                                    />
-                                    <div className="flex-1 text-left">
-                                        <p className="font-medium text-gray-900">{resident.fullName}</p>
-                                        <p className="text-sm text-gray-600">
-                                            {new Date().getFullYear() - new Date(resident.dob).getFullYear()} tuổi •{' '}
-                                            {resident.phoneNumber}
-                                        </p>
+                        <>
+                            <div className="space-y-2">
+                                {filteredResidents.map((resident) => (
+                                    <button
+                                        key={resident.id}
+                                        onClick={() => setSelectedResident(resident)}
+                                        className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${selectedResident?.id === resident.id
+                                            ? 'border-blue-500 bg-blue-50'
+                                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        <img
+                                            src={resident.avatar}
+                                            alt={resident.fullName}
+                                            className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${resident.fullName}&background=random`;
+                                            }}
+                                        />
+                                        <div className="flex-1 text-left">
+                                            <p className="font-medium text-gray-900">{resident.fullName}</p>
+                                            <p className="text-sm text-gray-600">
+                                                {new Date().getFullYear() - new Date(resident.dob).getFullYear()} tuổi •{' '}
+                                                {resident.phoneNumber}
+                                            </p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Pagination */}
+                            {totalPages > 1 && (
+                                <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                                    <div className="text-sm text-gray-600">
+                                        Hiển thị {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalRecords)} trong tổng số {totalRecords} cư dân
                                     </div>
-                                </button>
-                            ))}
-                        </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1 || isLoading}
+                                            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </button>
+                                        <span className="text-sm text-gray-700">
+                                            Trang {currentPage} / {totalPages}
+                                        </span>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages || isLoading}
+                                            className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -372,7 +435,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                                 onClick={onClose}
                                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                             >
-                                Hủy
+                                Đóng
                             </button>
                             <button
                                 onClick={handleSubmit}

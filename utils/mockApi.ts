@@ -173,7 +173,13 @@ export const fetchMock = async (endpoint: string, options?: any) => {
     const { data, error } = await supabase.from('events').select('*').order('start', { ascending: true });
 
     if (error) {
-      // Error fetching events - silently handle
+      console.error('❌ [Supabase] Error fetching events:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Không thể tải sự kiện: ${error.message}`);
     }
 
     const events = (data || []).map((e: any) => ({
@@ -199,7 +205,13 @@ export const fetchMock = async (endpoint: string, options?: any) => {
       .limit(5);
 
     if (error) {
-      // Error fetching upcoming events
+      console.error('❌ [Supabase] Error fetching upcoming events:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Không thể tải sự kiện sắp tới: ${error.message}`);
     }
 
     const events = (data || []).map((e: any) => ({
@@ -218,7 +230,18 @@ export const fetchMock = async (endpoint: string, options?: any) => {
   // --- Posts API (Supabase) ---
   if (path === '/api/posts') {
     const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
+
+    if (error) {
+      console.error('❌ [Supabase] Error fetching posts:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      throw new Error(`Không thể tải bài viết: ${error.message}`);
+    }
+
+    if (data) {
       const mappedPosts = data.map((p: any) => ({
         id: p.id,
         author: {
@@ -627,7 +650,6 @@ export const toggleVote = async (residentId: string, hasVoted: boolean) => {
  * Bypasses Supabase 1000-row limit
  */
 export const getVotingStats = async () => {
-  console.log('🔍 Fetching voting stats with pagination...');
 
   let allData: any[] = [];
   let page = 0;
@@ -645,13 +667,11 @@ export const getVotingStats = async () => {
       .range(start, end);
 
     if (error) {
-      console.error('Error fetching page', page, error);
       throw new Error(error.message);
     }
 
     if (data && data.length > 0) {
       allData = [...allData, ...data];
-      console.log(`📄 Page ${page + 1}: Fetched ${data.length} residents (Total: ${allData.length})`);
       page++;
       hasMore = data.length === pageSize;
     } else {
@@ -659,7 +679,6 @@ export const getVotingStats = async () => {
     }
   }
 
-  console.log(`✅ Total residents fetched: ${allData.length}`);
 
   // Group by Tổ and calculate stats
   const stats: Record<string, { total: number; voted: number; percentage: number }> = {};
@@ -683,7 +702,6 @@ export const getVotingStats = async () => {
     stats[group].percentage = total > 0 ? Math.round((voted / total) * 100) : 0;
   });
 
-  console.log('📊 Final stats:', stats);
   return stats;
 };
 
@@ -735,6 +753,19 @@ export const getHouseholds = async () => {
       headOfHouseholdId: h.head_of_household_id || '',
       memberIds: membersByHousehold[h.id] || [],
       relationships: relationshipsByHousehold[h.id] || {},
+      // Business household fields
+      isBusiness: h.is_business || false,
+      businessName: h.business_name,
+      businessLicenseNumber: h.business_license_number,
+      businessLicenseDate: h.business_license_date,
+      businessOwnerId: h.business_owner_id,
+      businessManagerId: h.business_manager_id,
+      // Poor household fields
+      isPoorHousehold: h.is_poor_household || false,
+      poorHouseholdNotes: h.poor_household_notes,
+      // Policy household fields
+      isPolicyHousehold: h.is_policy_household || false,
+      policyHouseholdNotes: h.policy_household_notes,
       createdAt: h.created_at
     }));
 
@@ -742,11 +773,24 @@ export const getHouseholds = async () => {
 };
 
 export const createHousehold = async (data: Partial<Household>) => {
-  const householdData = {
+  const householdData: any = {
     name: data.name,
     address: data.address,
     unit: data.unit,
-    head_of_household_id: data.headOfHouseholdId
+    head_of_household_id: data.headOfHouseholdId,
+    // Business household fields
+    is_business: data.isBusiness || false,
+    business_name: data.businessName || null,
+    business_license_number: data.businessLicenseNumber || null,
+    business_license_date: data.businessLicenseDate || null,
+    business_owner_id: data.businessOwnerId || null,
+    business_manager_id: data.businessManagerId || null,
+    // Poor household fields
+    is_poor_household: data.isPoorHousehold || false,
+    poor_household_notes: data.poorHouseholdNotes || null,
+    // Policy household fields
+    is_policy_household: data.isPolicyHousehold || false,
+    policy_household_notes: data.policyHouseholdNotes || null
   };
 
   const { data: inserted, error } = await supabase.from('households').insert([householdData]).select().single();
@@ -778,11 +822,24 @@ export const updateHousehold = async (id: string, data: Partial<Household>) => {
   const oldMemberIds = (currentMembers || []).map((m: any) => m.resident_id);
   const newMemberIds = (data.memberIds || oldMemberIds).filter(mid => mid !== data.headOfHouseholdId); // Exclude head
 
-  const householdData = {
+  const householdData: any = {
     name: data.name,
     address: data.address,
     unit: data.unit,
-    head_of_household_id: data.headOfHouseholdId
+    head_of_household_id: data.headOfHouseholdId,
+    // Business household fields
+    is_business: data.isBusiness !== undefined ? data.isBusiness : false,
+    business_name: data.businessName || null,
+    business_license_number: data.businessLicenseNumber || null,
+    business_license_date: data.businessLicenseDate || null,
+    business_owner_id: data.businessOwnerId || null,
+    business_manager_id: data.businessManagerId || null,
+    // Poor household fields
+    is_poor_household: data.isPoorHousehold !== undefined ? data.isPoorHousehold : false,
+    poor_household_notes: data.poorHouseholdNotes || null,
+    // Policy household fields
+    is_policy_household: data.isPolicyHousehold !== undefined ? data.isPolicyHousehold : false,
+    policy_household_notes: data.policyHouseholdNotes || null
   };
 
   const { data: updated, error } = await supabase

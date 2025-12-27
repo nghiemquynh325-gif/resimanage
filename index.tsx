@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+// Initialize network monitoring for debugging
+import './utils/networkMonitor';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {

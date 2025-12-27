@@ -3,10 +3,11 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { fetchMock, updateEvent } from '../../utils/mockApi';
+import { fetchMock, updateEvent, deleteEvent } from '../../utils/mockApi';
 import { Loader2, Plus, Calendar as CalendarIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CalendarEvent } from '../../types';
 import CreateEventModal from '../../components/events/CreateEventModal';
+import EventDetailModal from '../../components/events/EventDetailModal';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -23,12 +24,13 @@ const EventsPage: React.FC = () => {
 
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<{ start: string; end: string } | null>(null);
-  
+
   // Page-level Toast State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -65,7 +67,7 @@ const EventsPage: React.FC = () => {
       start: selectInfo.startStr,
       end: selectInfo.endStr
     });
-    setIsModalOpen(true);
+    setIsCreateModalOpen(true);
   };
 
   const handleEventClick = (clickInfo: any) => {
@@ -75,19 +77,19 @@ const EventsPage: React.FC = () => {
       id: event.id,
       title: event.title,
       start: event.startStr,
-      end: event.endStr || event.startStr, 
+      end: event.endStr || event.startStr,
       allDay: event.allDay,
       backgroundColor: event.backgroundColor,
       extendedProps: {
         location: event.extendedProps.location,
         description: event.extendedProps.description,
         type: event.extendedProps.type,
+        attendees: event.extendedProps.attendees,
       }
     };
-    
+
     setSelectedEvent(plainEvent);
-    setSelectedDate(null);
-    setIsModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
   /**
@@ -102,12 +104,12 @@ const EventsPage: React.FC = () => {
     const { event, revert } = dropInfo;
     const newStart = event.startStr;
     const newEnd = event.endStr || event.startStr;
-    
+
     // 1. Optimistic Update (Local State)
     const originalEvents = [...events];
-    const updatedEvents = events.map(e => 
-      e.id === event.id 
-        ? { ...e, start: newStart, end: newEnd } 
+    const updatedEvents = events.map(e =>
+      e.id === event.id
+        ? { ...e, start: newStart, end: newEnd }
         : e
     );
     setEvents(updatedEvents);
@@ -120,7 +122,7 @@ const EventsPage: React.FC = () => {
       });
     } catch (error) {
       showToast('Không thể cập nhật thời gian. Đang hoàn tác...', 'error');
-      
+
       // 3. Revert on Failure
       revert(); // Revert FullCalendar visual
       setEvents(originalEvents); // Revert React State
@@ -133,16 +135,42 @@ const EventsPage: React.FC = () => {
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
     setSelectedDate({
-        start: now.toISOString(),
-        end: oneHourLater.toISOString()
+      start: now.toISOString(),
+      end: oneHourLater.toISOString()
     });
-    setIsModalOpen(true);
+    setIsCreateModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsModalOpen(false);
+  const handleCreateModalClose = () => {
+    setIsCreateModalOpen(false);
     setSelectedEvent(null);
     setSelectedDate(null);
+  };
+
+  const handleDetailModalClose = () => {
+    setIsDetailModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleEditEvent = () => {
+    // Switch from detail view to edit mode
+    setIsDetailModalOpen(false);
+    setIsCreateModalOpen(true);
+    // selectedEvent is already set
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      await deleteEvent(selectedEvent.id);
+      showToast('Đã xóa sự kiện thành công', 'success');
+      setIsDetailModalOpen(false);
+      setSelectedEvent(null);
+      await loadEvents();
+    } catch (error) {
+      showToast('Không thể xóa sự kiện', 'error');
+    }
   };
 
   return (
@@ -156,9 +184,9 @@ const EventsPage: React.FC = () => {
           </h2>
           <p className="text-slate-500 mt-1">Quản lý các cuộc họp, sự kiện và hoạt động của khu dân cư</p>
         </div>
-        
+
         {isAdmin && (
-          <button 
+          <button
             onClick={handleCreateButtonClick}
             className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm transform active:scale-95"
           >
@@ -201,22 +229,34 @@ const EventsPage: React.FC = () => {
         />
       </div>
 
-      {isModalOpen && (
-        <CreateEventModal 
-          isOpen={isModalOpen}
-          onClose={handleModalClose}
+      {/* Create/Edit Event Modal */}
+      {isCreateModalOpen && (
+        <CreateEventModal
+          isOpen={isCreateModalOpen}
+          onClose={handleCreateModalClose}
           onSuccess={loadEvents}
           eventData={selectedEvent}
           initialDate={selectedDate}
-          readOnly={!isAdmin} 
+          readOnly={!isAdmin}
+        />
+      )}
+
+      {/* Event Detail Modal */}
+      {isDetailModalOpen && (
+        <EventDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={handleDetailModalClose}
+          event={selectedEvent}
+          onEdit={handleEditEvent}
+          onDelete={handleDeleteEvent}
+          isAdmin={isAdmin}
         />
       )}
 
       {/* Page Toast Portal */}
       {toast && createPortal(
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${
-          toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-        }`}>
+        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}>
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{toast.message}</span>
         </div>,
@@ -230,7 +270,7 @@ const EventsPage: React.FC = () => {
 function renderEventContent(eventInfo: any) {
   const { event } = eventInfo;
   const isMeeting = event.extendedProps?.type === 'Họp';
-  
+
   return (
     <div className="flex items-center gap-1 overflow-hidden px-1 w-full">
       {isMeeting && <div className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />}

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Ban, CheckCircle2, AlertCircle, Loader2, Filter, FileSpreadsheet, Download } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Resident } from '../../../types';
@@ -62,14 +62,14 @@ const ResidentsPage: React.FC = () => {
   const [votingStats, setVotingStats] = useState<Record<string, { total: number; voted: number; percentage: number }>>({});
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
-  // Helper: Show Toast
-  const showToast = (message: string, type: 'success' | 'error') => {
+  // Helper: Show Toast - Memoized to prevent re-creation
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
-  // Fetch Residents
-  const fetchResidents = async () => {
+  // Fetch Residents - Memoized to prevent re-creation
+  const fetchResidents = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -108,7 +108,7 @@ const ResidentsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, currentPage]);
 
   // Debounced Effect for Search & Filter
   useEffect(() => {
@@ -118,7 +118,8 @@ const ResidentsPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, currentPage]);
 
-  // Load voting statistics
+  // Load voting statistics - Optimized to only run when residents length changes
+  const residentsLength = residents.length;
   useEffect(() => {
     const loadVotingStats = async () => {
       try {
@@ -129,53 +130,53 @@ const ResidentsPage: React.FC = () => {
       }
     };
 
-    if (residents.length > 0) {
+    if (residentsLength > 0) {
       loadVotingStats();
     }
-  }, [residents]);
+  }, [residentsLength]);
 
-  // Handlers
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handlers - Wrapped with useCallback to prevent re-creation
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1); // Reset to page 1 on search
-  };
+  }, []);
 
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterStatus(e.target.value);
     setCurrentPage(1); // Reset to page 1 on filter
-  };
+  }, []);
 
-  const handleAgeFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAgeFromChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterAgeFrom(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleAgeToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAgeToChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterAgeTo(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSpecialChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleSpecialChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterSpecial(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleEthnicityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleEthnicityChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterEthnicity(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleReligionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleReligionChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterReligion(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleGenderChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterGender(e.target.value);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleClearAllFilters = () => {
+  const handleClearAllFilters = useCallback(() => {
     setFilterStatus('all');
     setFilterGender('all');
     setFilterAgeFrom('');
@@ -186,9 +187,9 @@ const ResidentsPage: React.FC = () => {
     setFilterUnit('all');
     setFilterVotingStatus('all');
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleQuickFilter = (type: string) => {
+  const handleQuickFilter = useCallback((type: string) => {
     handleClearAllFilters();
     switch (type) {
       case 'party_member':
@@ -205,10 +206,10 @@ const ResidentsPage: React.FC = () => {
         break;
     }
     setCurrentPage(1);
-  };
+  }, [handleClearAllFilters]);
 
-  // Count active filters
-  const getActiveFiltersCount = () => {
+  // Count active filters - Memoized to prevent recalculation on every render
+  const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (filterStatus !== 'all') count++;
     if (filterGender !== 'all') count++;
@@ -219,9 +220,7 @@ const ResidentsPage: React.FC = () => {
     if (filterUnit !== 'all') count++;
     if (filterVotingStatus !== 'all') count++;
     return count;
-  };
-
-  const activeFiltersCount = getActiveFiltersCount();
+  }, [filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -505,7 +504,7 @@ const ResidentsPage: React.FC = () => {
               >
                 <option value="all">Tất cả các Tổ</option>
                 {Object.entries(votingStats)
-                  .filter(([group]) => group !== 'Không có tổ')
+                  .filter(([group, stats]) => group !== 'Không có tổ' && (stats as any).total > 0)
                   .sort(([a], [b]) => {
                     // Extract numbers for proper numeric sorting
                     const numA = parseInt(a.replace(/\D/g, '')) || 0;
@@ -778,15 +777,15 @@ const ResidentsPage: React.FC = () => {
                 onChange={(e) => { setFilterUnit(e.target.value); setCurrentPage(1); }}
               >
                 <option value="all">Tất cả các Tổ</option>
-                {Object.keys(votingStats)
-                  .filter(unit => unit !== 'Không có tổ')
-                  .sort((a, b) => {
+                {Object.entries(votingStats)
+                  .filter(([unit, stats]) => unit !== 'Không có tổ' && (stats as any).total > 0)
+                  .sort(([a], [b]) => {
                     // Extract numbers from strings for proper numeric sorting
                     const numA = parseInt(a.replace(/\D/g, '')) || 0;
                     const numB = parseInt(b.replace(/\D/g, '')) || 0;
                     return numA - numB;
                   })
-                  .map(unit => (
+                  .map(([unit]) => (
                     <option key={unit} value={unit}>
                       {unit.toLowerCase().startsWith('tổ') ? unit : `Tổ ${unit}`}
                     </option>

@@ -33,8 +33,16 @@ export function useApi<T>(
     } catch (err: any) {
       const errorMessage = err.message || 'Đã có lỗi xảy ra';
       setError(errorMessage);
-      // Suppress console error for production cleanliness
-      // console.error("API Error:", err);
+      // Log error for debugging network issues
+      console.error("API Error:", err);
+      console.error("Error details:", {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint,
+        status: err.status,
+        statusText: err.statusText
+      });
       return undefined;
     } finally {
       setIsLoading(false);

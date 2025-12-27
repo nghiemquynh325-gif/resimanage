@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Users, Home, Loader2, CheckCircle2, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Household, Resident } from '../../../types';
@@ -46,23 +46,23 @@ const HouseholdsPage: React.FC = () => {
     fetchData();
   }, []);
 
-  // Helper to show toast
-  const showToast = (message: string, type: 'success' | 'error') => {
+  // Helper to show toast - Memoized
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
-  };
+  }, []);
 
   // Get residents available for selection (not in household OR already in the currently edited household)
   const availableResidents = residents.filter(r => !r.householdId || (selectedHousehold && selectedHousehold.memberIds.includes(r.id)));
 
-  // Helper to find resident name by ID
-  const getResidentName = (id: string) => {
+  // Helper to find resident name by ID - Memoized
+  const getResidentName = useCallback((id: string) => {
     const resident = residents.find(r => r.id === id);
     return resident ? resident.fullName : 'Không xác định';
-  };
+  }, [residents]);
 
-  // Helper to format unit display: "2" -> "Tổ 2", "tổ 3" -> "Tổ 3"
-  const formatUnit = (unit: string) => {
+  // Helper to format unit display: "2" -> "Tổ 2", "tổ 3" -> "Tổ 3" - Memoized
+  const formatUnit = useCallback((unit: string) => {
     if (!unit) return '—';
     const trimmed = unit.trim();
     // If already starts with "tổ" (any case), normalize to "Tổ"
@@ -73,28 +73,41 @@ const HouseholdsPage: React.FC = () => {
     }
     // Otherwise, add "Tổ " prefix
     return `Tổ ${trimmed}`;
-  };
+  }, []);
 
-  // Get unique units for filter dropdown
-  const uniqueUnits = Array.from(new Set(households.map(h => h.unit).filter(Boolean)));
+  // Get unique units for filter dropdown - Memoized
+  const uniqueUnits = useMemo(() =>
+    Array.from(new Set(households.map(h => h.unit).filter(Boolean))),
+    [households]
+  );
 
-  // Filter households
-  const filteredHouseholds = households.filter(household => {
-    // Filter by unit
-    if (filterUnit !== 'all' && household.unit !== filterUnit) {
-      return false;
-    }
-
-    // Filter by head of household name
-    if (filterHeadName.trim()) {
-      const headName = getResidentName(household.headOfHouseholdId).toLowerCase();
-      if (!headName.includes(filterHeadName.toLowerCase().trim())) {
+  // Filter households - Memoized to prevent recalculation
+  const filteredHouseholds = useMemo(() => {
+    return households.filter(household => {
+      // Filter by unit
+      if (filterUnit !== 'all' && household.unit !== filterUnit) {
         return false;
       }
-    }
 
-    return true;
-  });
+      // Filter by head of household name
+      if (filterHeadName.trim()) {
+        const resident = residents.find(r => r.id === household.headOfHouseholdId);
+        if (!resident) {
+          return false; // Skip if head not found
+        }
+
+        const searchTerm = filterHeadName.toLowerCase().trim();
+        const residentName = resident.fullName.toLowerCase();
+
+        // Check if name contains search term
+        if (!residentName.includes(searchTerm)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [households, residents, filterUnit, filterHeadName]);
 
   const handleCreate = () => {
     setSelectedHousehold(null);
@@ -134,7 +147,7 @@ const HouseholdsPage: React.FC = () => {
     "Tên Hộ gia đình",
     "Tổ",
     "Địa chỉ",
-    "Chủ hộ",
+    "Loại hộ",
     "Số thành viên",
     "Hành động"
   ];
@@ -289,9 +302,41 @@ const HouseholdsPage: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-700 font-medium">
-                      {getResidentName(household.headOfHouseholdId)}
-                    </span>
+                    {household.isBusiness && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect width="18" height="18" x="3" y="3" rx="2" />
+                          <path d="M7 7h.01" />
+                          <path d="M17 7h.01" />
+                          <path d="M7 17h.01" />
+                          <path d="M17 17h.01" />
+                        </svg>
+                        Hộ kinh doanh
+                      </span>
+                    )}
+                    {household.isPoorHousehold && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+                          <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
+                          <path d="M12 3v6" />
+                        </svg>
+                        Hộ nghèo/cận nghèo
+                      </span>
+                    )}
+                    {household.isPolicyHousehold && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                          <path d="M2 17l10 5 10-5" />
+                          <path d="M2 12l10 5 10-5" />
+                        </svg>
+                        Hộ chính sách
+                      </span>
+                    )}
+                    {!household.isBusiness && !household.isPoorHousehold && !household.isPolicyHousehold && (
+                      <span className="text-sm text-slate-400">—</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -343,7 +388,10 @@ const HouseholdsPage: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         household={viewingHousehold}
-        members={residents.filter(r => viewingHousehold?.memberIds.includes(r.id))}
+        members={residents.filter(r =>
+          viewingHousehold?.memberIds.includes(r.id) ||
+          r.id === viewingHousehold?.headOfHouseholdId
+        )}
       />
 
       {/* Toast Portal */}

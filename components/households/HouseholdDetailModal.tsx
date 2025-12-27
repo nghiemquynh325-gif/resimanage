@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Home, MapPin, Calendar, User, Phone, Crown, Hash } from 'lucide-react';
+import { Home, MapPin, Calendar, User, Phone, Crown, Hash, Building2, FileText } from 'lucide-react';
 import Modal from '../ui/Modal';
 import ResidentDetailModal from '../residents/ResidentDetailModal';
 import { Household, Resident } from '../../types';
+
 
 interface HouseholdDetailModalProps {
   isOpen: boolean;
@@ -86,6 +87,163 @@ const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
           </div>
         </div>
 
+        {/* Business Information (if applicable) */}
+        {household.isBusiness && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 space-y-3">
+            <div className="flex items-center gap-2 border-b border-blue-200 pb-2">
+              <div className="p-1.5 bg-blue-600 text-white rounded-lg">
+                <Building2 size={18} />
+              </div>
+              <h4 className="font-bold text-blue-900">Thông tin Kinh doanh</h4>
+              <span className="ml-auto px-2 py-1 bg-blue-600 text-white text-xs font-semibold rounded">
+                HỘ KINH DOANH
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div className="flex items-start gap-2 text-sm">
+                <Building2 size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                <span>
+                  <span className="font-semibold text-blue-900 block">Tên cơ sở:</span>
+                  <span className="text-slate-700">{household.businessName || 'Chưa cập nhật'}</span>
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm">
+                <FileText size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                <span>
+                  <span className="font-semibold text-blue-900 block">Số giấy phép:</span>
+                  <span className="text-slate-700">{household.businessLicenseNumber || 'Chưa cập nhật'}</span>
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm">
+                <Calendar size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                <span>
+                  <span className="font-semibold text-blue-900 block">Ngày cấp giấy phép:</span>
+                  <span className="text-slate-700">
+                    {household.businessLicenseDate
+                      ? new Date(household.businessLicenseDate).toLocaleDateString('vi-VN')
+                      : 'Chưa cập nhật'}
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm">
+                <Crown size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                <span>
+                  <span className="font-semibold text-blue-900 block">Chủ sở hữu:</span>
+                  {household.businessOwnerId ? (
+                    <span className="text-slate-700">
+                      {(() => {
+                        const owner = members.find(m => m.id === household.businessOwnerId);
+                        return owner ? (
+                          <>
+                            {owner.fullName}
+                            {owner.phoneNumber && (
+                              <span className="text-slate-500 ml-2">• {owner.phoneNumber}</span>
+                            )}
+                          </>
+                        ) : 'Chưa cập nhật';
+                      })()}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic">Chưa cập nhật</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm">
+                <User size={16} className="text-blue-600 mt-0.5 shrink-0" />
+                <span>
+                  <span className="font-semibold text-blue-900 block">Người quản lý:</span>
+                  {household.businessManagerId ? (
+                    <span className="text-slate-700">
+                      {(() => {
+                        const manager = members.find(m => m.id === household.businessManagerId);
+                        return manager ? (
+                          <>
+                            {manager.fullName}
+                            {manager.phoneNumber && (
+                              <span className="text-slate-500 ml-2">• {manager.phoneNumber}</span>
+                            )}
+                          </>
+                        ) : 'Chưa cập nhật';
+                      })()}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic">Chưa cập nhật</span>
+                  )}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Poor Household Information (if applicable) */}
+        {household.isPoorHousehold && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-4 rounded-xl border border-amber-200 space-y-3">
+            <div className="flex items-center gap-2 border-b border-amber-200 pb-2">
+              <div className="p-1.5 bg-amber-600 text-white rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
+                  <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
+                  <path d="M12 3v6" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-amber-900">Hộ nghèo/cận nghèo</h4>
+              <span className="ml-auto px-2 py-1 bg-amber-600 text-white text-xs font-semibold rounded">
+                HỘ NGHÈO/CẬN NGHÈO
+              </span>
+            </div>
+
+            {household.poorHouseholdNotes && (
+              <div className="pt-1">
+                <p className="text-sm font-semibold text-amber-900 mb-1">Nội dung:</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-3 rounded-lg border border-amber-100">
+                  {household.poorHouseholdNotes}
+                </p>
+              </div>
+            )}
+
+            {!household.poorHouseholdNotes && (
+              <p className="text-sm text-amber-700 italic">Chưa có ghi chú</p>
+            )}
+          </div>
+        )}
+
+        {/* Policy Household Information (if applicable) */}
+        {household.isPolicyHousehold && (
+          <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-4 rounded-xl border border-purple-200 space-y-3">
+            <div className="flex items-center gap-2 border-b border-purple-200 pb-2">
+              <div className="p-1.5 bg-purple-600 text-white rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                  <path d="M2 17l10 5 10-5" />
+                  <path d="M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <h4 className="font-bold text-purple-900">Hộ chính sách</h4>
+              <span className="ml-auto px-2 py-1 bg-purple-600 text-white text-xs font-semibold rounded">
+                HỘ CHÍNH SÁCH
+              </span>
+            </div>
+
+            {household.policyHouseholdNotes && (
+              <div className="pt-1">
+                <p className="text-sm font-semibold text-purple-900 mb-1">Nội dung:</p>
+                <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white p-3 rounded-lg border border-purple-100">
+                  {household.policyHouseholdNotes}
+                </p>
+              </div>
+            )}
+
+            {!household.policyHouseholdNotes && (
+              <p className="text-sm text-purple-700 italic">Chưa có ghi chú</p>
+            )}
+          </div>
+        )}
+
         {/* Members List */}
         <div>
           <h4 className="text-md font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -132,8 +290,8 @@ const HouseholdDetailModal: React.FC<HouseholdDetailModalProps> = ({
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-md text-xs font-medium ${isHead
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-600'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-slate-100 text-slate-600'
                           }`}>
                           {getRelationshipLabel(member.id)}
                         </span>

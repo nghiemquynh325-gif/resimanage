@@ -43,6 +43,19 @@ export interface Household {
   memberIds: string[];
   relationships?: Record<string, string>; // Map<ResidentId, RelationshipName>
   createdAt: string;
+  // Business household fields
+  isBusiness?: boolean;
+  businessName?: string;
+  businessLicenseNumber?: string;
+  businessLicenseDate?: string;
+  businessOwnerId?: string;
+  businessManagerId?: string;
+  // Poor household fields
+  isPoorHousehold?: boolean;
+  poorHouseholdNotes?: string;
+  // Policy household fields
+  isPolicyHousehold?: boolean;
+  policyHouseholdNotes?: string;
 }
 
 export interface Event {

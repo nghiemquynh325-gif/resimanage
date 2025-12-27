@@ -4,6 +4,7 @@ import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 import StatCard from '../../components/dashboard/StatCard';
 import GenderDistributionChart from '../../components/dashboard/GenderDistributionChart';
 import AgeDistributionChart from '../../components/dashboard/AgeDistributionChart';
+import UpcomingEventsWidget from '../../components/dashboard/UpcomingEventsWidget';
 import DashboardSkeleton from '../../components/skeletons/DashboardSkeleton';
 import { AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
@@ -59,6 +60,11 @@ const AdminDashboardPage: React.FC = () => {
             <AgeDistributionChart data={data.demographics.ageData} />
           </>
         )}
+      </div>
+
+      {/* Upcoming Events Widget */}
+      <div className="mt-6">
+        <UpcomingEventsWidget />
       </div>
     </div>
   );

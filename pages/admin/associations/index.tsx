@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Users, UserPlus, Download, Shield, Heart, Zap, Activity, Star, Trash2, Eye, EyeOff, Flag } from 'lucide-react';
 import type { Association, AssociationMember, AssociationType, AssociationRole, Resident } from '../../../types';
 import AddMemberModal from '../../../components/associations/AddMemberModal';
@@ -36,6 +36,9 @@ const AssociationsPage: React.FC = () => {
     const [showMilitaryInfo, setShowMilitaryInfo] = useState<Record<string, boolean>>({});
     const [showPartyMemberInfo, setShowPartyMemberInfo] = useState<Record<string, boolean>>({});
 
+    // Memoize existingMemberIds to prevent infinite loop and improve performance
+    const existingMemberIds = useMemo(() => members.map((m) => m.residentId), [members]);
+
     // Fetch associations on mount
     useEffect(() => {
         loadAssociations();
@@ -63,14 +66,14 @@ const AssociationsPage: React.FC = () => {
         }
     };
 
-    const loadMembers = async (associationId: string) => {
+    const loadMembers = useCallback(async (associationId: string) => {
         try {
             const data = await getAssociationMembers(associationId);
             setMembers(data);
         } catch (error) {
             console.error('Failed to load members:', error);
         }
-    };
+    }, []);
 
     const handleAddMember = async (residentId: string, role: AssociationRole, militaryInfo?: any, partyMemberInfo?: any) => {
         if (!selectedAssociation) return;
@@ -89,6 +92,9 @@ const AssociationsPage: React.FC = () => {
                 await addPartyMemberInfo(newMember.id, partyMemberInfo);
             }
 
+            // Optimize: Only reload members if we need full data, otherwise just add to list
+            // For now, we'll reload to get the full member object with resident details
+            // But we can optimize this further by constructing the member object locally
             await loadMembers(selectedAssociation.id);
         } catch (error) {
             console.error('Failed to add member:', error);
@@ -319,37 +325,42 @@ const AssociationsPage: React.FC = () => {
                                                 {/* Party Member Info for party_member_213 association */}
                                                 {selectedAssociation?.type === 'party_member_213' && member.partyMemberInfo && showPartyMemberInfo[member.id] && (
                                                     <div className="mt-2 pt-2 border-t border-gray-200">
-                                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                                                        <div className="space-y-2 text-xs text-gray-700">
                                                             {member.partyMemberInfo.workplace && (
-                                                                <div className="col-span-2">
+                                                                <div>
                                                                     <span className="font-medium">Đơn vị công tác:</span> {member.partyMemberInfo.workplace}
                                                                 </div>
                                                             )}
-                                                            {member.partyMemberInfo.introductionDate && (
-                                                                <div>
-                                                                    <span className="font-medium">Ngày giới thiệu:</span>{' '}
-                                                                    {new Date(member.partyMemberInfo.introductionDate).toLocaleDateString('vi-VN')}
-                                                                </div>
-                                                            )}
-                                                            {member.partyMemberInfo.partyJoinDate && (
-                                                                <div>
-                                                                    <span className="font-medium">Ngày vào đảng:</span>{' '}
-                                                                    {new Date(member.partyMemberInfo.partyJoinDate).toLocaleDateString('vi-VN')}
-                                                                </div>
-                                                            )}
-                                                            {member.partyMemberInfo.officialDate && (
-                                                                <div>
-                                                                    <span className="font-medium">Ngày chính thức:</span>{' '}
-                                                                    {new Date(member.partyMemberInfo.officialDate).toLocaleDateString('vi-VN')}
+                                                            {/* Date fields in horizontal row */}
+                                                            {(member.partyMemberInfo.introductionDate || member.partyMemberInfo.partyJoinDate || member.partyMemberInfo.officialDate) && (
+                                                                <div className="flex items-center gap-4">
+                                                                    {member.partyMemberInfo.introductionDate && (
+                                                                        <div>
+                                                                            <span className="font-medium">Ngày giới thiệu:</span>{' '}
+                                                                            {new Date(member.partyMemberInfo.introductionDate).toLocaleDateString('vi-VN')}
+                                                                        </div>
+                                                                    )}
+                                                                    {member.partyMemberInfo.partyJoinDate && (
+                                                                        <div>
+                                                                            <span className="font-medium">Ngày vào đảng:</span>{' '}
+                                                                            {new Date(member.partyMemberInfo.partyJoinDate).toLocaleDateString('vi-VN')}
+                                                                        </div>
+                                                                    )}
+                                                                    {member.partyMemberInfo.officialDate && (
+                                                                        <div>
+                                                                            <span className="font-medium">Ngày chính thức:</span>{' '}
+                                                                            {new Date(member.partyMemberInfo.officialDate).toLocaleDateString('vi-VN')}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                             {member.partyMemberInfo.partyActivities && (
-                                                                <div className="col-span-2">
+                                                                <div>
                                                                     <span className="font-medium">Sinh hoạt đảng:</span> {member.partyMemberInfo.partyActivities}
                                                                 </div>
                                                             )}
                                                             {member.partyMemberInfo.partyNotes && (
-                                                                <div className="col-span-2">
+                                                                <div>
                                                                     <span className="font-medium">Nhận xét:</span> {member.partyMemberInfo.partyNotes}
                                                                 </div>
                                                             )}
@@ -417,7 +428,7 @@ const AssociationsPage: React.FC = () => {
                 isOpen={isAddMemberModalOpen}
                 onClose={() => setIsAddMemberModalOpen(false)}
                 onAdd={handleAddMember}
-                existingMemberIds={members.map((m) => m.residentId)}
+                existingMemberIds={existingMemberIds}
                 associationName={selectedAssociation?.name || ''}
                 associationType={selectedAssociation?.type}
             />

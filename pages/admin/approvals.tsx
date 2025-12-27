@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { usePendingApprovals } from '../../hooks/usePendingApprovals';
 import ApprovalCard from '../../components/admin/ApprovalCard';
 import ApprovalCardSkeleton from '../../components/skeletons/ApprovalCardSkeleton';
-import { X, Inbox, Loader2, AlertCircle, CheckCircle2, Users, UserCog } from 'lucide-react';
+import { X, Inbox, Loader2, AlertCircle, CheckCircle2, Users, UserCog, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../../components/ui/Modal';
@@ -21,6 +21,9 @@ import type { AdminStaff } from '../../types';
 const ApprovalsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'residents' | 'admin'>('residents');
   const { pendingUsers, isLoading, approveUser, rejectUser } = usePendingApprovals();
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Admin staff state
   const [pendingAdminStaff, setPendingAdminStaff] = useState<AdminStaff[]>([]);
@@ -94,6 +97,29 @@ const ApprovalsPage: React.FC = () => {
     }
   };
 
+  // Filter residents based on search query
+  const filteredResidents = pendingUsers.filter(user => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      user.fullName?.toLowerCase().includes(query) ||
+      user.email?.toLowerCase().includes(query) ||
+      user.phoneNumber?.toLowerCase().includes(query)
+    );
+  });
+
+  // Filter admin staff based on search query
+  const filteredAdminStaff = pendingAdminStaff.filter(staff => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      staff.fullName?.toLowerCase().includes(query) ||
+      staff.email?.toLowerCase().includes(query) ||
+      staff.phoneNumber?.toLowerCase().includes(query) ||
+      staff.identityCard?.toLowerCase().includes(query)
+    );
+  });
+
   // Animation Variants for staggering list items
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -137,6 +163,26 @@ const ApprovalsPage: React.FC = () => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <input
+          type="text"
+          placeholder={activeTab === 'residents' ? 'Tìm kiếm cư dân (tên, email, SĐT)...' : 'Tìm kiếm cán bộ (tên, email, SĐT, CCCD)...'}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
       {/* Content Area */}
       {activeTab === 'residents' ? (
         // RESIDENTS TAB
@@ -146,7 +192,7 @@ const ApprovalsPage: React.FC = () => {
               <ApprovalCardSkeleton key={i} />
             ))}
           </div>
-        ) : pendingUsers.length === 0 ? (
+        ) : filteredResidents.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -155,8 +201,12 @@ const ApprovalsPage: React.FC = () => {
             <div className="p-6 bg-slate-100 rounded-full mb-4">
               <Inbox size={48} className="text-slate-400" />
             </div>
-            <p className="text-lg font-medium text-gray-600">Hiện không có yêu cầu cư dân chờ duyệt.</p>
-            <p className="text-sm text-gray-500 mt-1">Danh sách sẽ tự động cập nhật khi có đăng ký mới.</p>
+            <p className="text-lg font-medium text-gray-600">
+              {searchQuery ? 'Không tìm thấy cư dân phù hợp' : 'Hiện không có yêu cầu cư dân chờ duyệt.'}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {searchQuery ? 'Thử tìm kiếm với từ khóa khác' : 'Danh sách sẽ tự động cập nhật khi có đăng ký mới.'}
+            </p>
           </motion.div>
         ) : (
           <motion.div
@@ -166,7 +216,7 @@ const ApprovalsPage: React.FC = () => {
             className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
           >
             <AnimatePresence mode='popLayout'>
-              {pendingUsers.map(user => (
+              {filteredResidents.map(user => (
                 <ApprovalCard
                   key={user.id}
                   user={user}
@@ -186,7 +236,7 @@ const ApprovalsPage: React.FC = () => {
               <ApprovalCardSkeleton key={i} />
             ))}
           </div>
-        ) : pendingAdminStaff.length === 0 ? (
+        ) : filteredAdminStaff.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -195,12 +245,16 @@ const ApprovalsPage: React.FC = () => {
             <div className="p-6 bg-slate-100 rounded-full mb-4">
               <Inbox size={48} className="text-slate-400" />
             </div>
-            <p className="text-lg font-medium text-gray-600">Hiện không có yêu cầu cán bộ chờ duyệt.</p>
-            <p className="text-sm text-gray-500 mt-1">Danh sách sẽ tự động cập nhật khi có đăng ký mới.</p>
+            <p className="text-lg font-medium text-gray-600">
+              {searchQuery ? 'Không tìm thấy cán bộ phù hợp' : 'Hiện không có yêu cầu cán bộ chờ duyệt.'}
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              {searchQuery ? 'Thử tìm kiếm với từ khóa khác' : 'Danh sách sẽ tự động cập nhật khi có đăng ký mới.'}
+            </p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {pendingAdminStaff.map(staff => (
+            {filteredAdminStaff.map(staff => (
               <div
                 key={staff.id}
                 className="bg-white rounded-xl shadow-md border border-slate-200 p-6 hover:shadow-lg transition-shadow"
