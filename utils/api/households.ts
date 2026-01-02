@@ -161,7 +161,6 @@ export const createHousehold = async (data: Partial<Household>) => {
  * Update an existing household
  */
 export const updateHousehold = async (id: string, data: Partial<Household>) => {
-    console.log('DEBUG: updateHousehold called', { id, data });
     const { data: currentMembers } = await supabase
         .from('household_members')
         .select('resident_id')

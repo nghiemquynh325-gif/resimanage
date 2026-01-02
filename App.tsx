@@ -15,6 +15,8 @@ import HouseholdsPage from './pages/admin/households/index';
 import AssociationsPage from './pages/admin/associations/index';
 import EventsPage from './pages/admin/events';
 import Community from './components/Community';
+import NewsPage from './pages/admin/news/index';
+import ProceduresPage from './pages/admin/procedures/index';
 import ResidentHomePage from './pages/resident/home';
 import ResidentProfilePage from './pages/resident/profile';
 import ProtectedRoute from './components/common/ProtectedRoute';
@@ -90,6 +92,14 @@ const router = createHashRouter([
           },
 
           // --- Shared/Resident Routes ---
+          {
+            path: "news",
+            element: <NewsPage />,
+          },
+          {
+            path: "procedures",
+            element: <ProceduresPage />,
+          },
           {
             path: "events",
             element: <EventsPage />,

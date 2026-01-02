@@ -139,7 +139,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
             setSelectedResident(null);
             setSearchQuery('');
             setDebouncedSearchQuery('');
-            setSelectedRole('member');
+            setSelectedRole(associationType === 'militia' ? 'fighter' : associationType === 'security_force' ? 'group_member' : 'member');
             // Reload residents to update the list (existing members will be filtered out)
             await loadResidents();
             setMilitaryInfo({
@@ -291,9 +291,32 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                                 onChange={(e) => setSelectedRole(e.target.value as AssociationRole)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
-                                <option value="member">Hội viên</option>
-                                <option value="vice_president">Chi hội phó</option>
-                                <option value="president">Chi hội trưởng</option>
+                                {/* Default roles for most associations */}
+                                {(!associationType || ['veterans', 'women', 'youth', 'red_cross', 'discharged_military', 'party_member_213'].includes(associationType)) && (
+                                    <>
+                                        <option value="member">Hội viên</option>
+                                        <option value="vice_president">Chi hội phó</option>
+                                        <option value="president">Chi hội trưởng</option>
+                                    </>
+                                )}
+
+                                {/* Militia roles */}
+                                {associationType === 'militia' && (
+                                    <>
+                                        <option value="fighter">Chiến sĩ</option>
+                                        <option value="team_leader">Tiểu đội trưởng</option>
+                                        <option value="squad_leader">Khu đội trưởng</option>
+                                    </>
+                                )}
+
+                                {/* Security force roles */}
+                                {associationType === 'security_force' && (
+                                    <>
+                                        <option value="group_member">Tổ viên</option>
+                                        <option value="deputy_leader">Tổ phó</option>
+                                        <option value="group_leader">Tổ trưởng</option>
+                                    </>
+                                )}
                             </select>
                         </div>
 

@@ -152,8 +152,8 @@ export interface AdminStaff {
 }
 
 // Association Management Types
-export type AssociationType = 'veterans' | 'women' | 'youth' | 'red_cross' | 'discharged_military' | 'party_member_213';
-export type AssociationRole = 'president' | 'vice_president' | 'member';
+export type AssociationType = 'veterans' | 'women' | 'youth' | 'red_cross' | 'discharged_military' | 'party_member_213' | 'militia' | 'security_force';
+export type AssociationRole = 'president' | 'vice_president' | 'member' | 'squad_leader' | 'team_leader' | 'fighter' | 'group_leader' | 'deputy_leader' | 'group_member';
 
 export interface Association {
   id: string;
@@ -204,3 +204,34 @@ export interface PartyMemberInfo {
   createdAt: string;
   updatedAt?: string;
 }
+
+// News Post
+export interface NewsPost {
+  id: string;
+  title: string;
+  content: string;
+  imageUrl?: string;
+  zaloPostId?: string;
+  authorId?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Administrative Procedure
+export interface AdminProcedure {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  fileUrls: Array<{
+    name: string;
+    url: string;
+    size?: number;
+    type?: string;
+  }>;
+  youtubeUrl?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+

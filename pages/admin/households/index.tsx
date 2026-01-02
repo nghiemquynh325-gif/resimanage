@@ -9,6 +9,7 @@ import { getAllResidents } from '../../../utils/api/residents';
 import Table from '../../../components/ui/Table';
 import HouseholdFormModal from '../../../components/households/HouseholdFormModal';
 import HouseholdDetailModal from '../../../components/households/HouseholdDetailModal';
+import ConfirmDialog from '../../../components/common/ConfirmDialog';
 
 const HouseholdsPage: React.FC = () => {
   const [households, setHouseholds] = useState<Household[]>([]);
@@ -26,7 +27,15 @@ const HouseholdsPage: React.FC = () => {
   const [filterUnit, setFilterUnit] = useState<string>('all');
   const [filterHeadName, setFilterHeadName] = useState<string>('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    household: Household | null;
+  }>({ isOpen: false, household: null });
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -111,6 +120,21 @@ const HouseholdsPage: React.FC = () => {
     });
   }, [households, residents, filterUnit, filterHeadName]);
 
+  // Paginated households
+  const paginatedHouseholds = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredHouseholds.slice(startIndex, endIndex);
+  }, [filteredHouseholds, currentPage]);
+
+  const totalPages = Math.ceil(filteredHouseholds.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterUnit, filterHeadName]);
+
+
   const handleCreate = () => {
     setSelectedHousehold(null);
     setIsFormModalOpen(true);
@@ -127,21 +151,25 @@ const HouseholdsPage: React.FC = () => {
   };
 
   const handleDelete = async (household: Household) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa hộ gia đình "${household.name}" không ? `)) {
-      // Optimistic Update
-      const previousHouseholds = [...households];
-      setHouseholds(households.filter(h => h.id !== household.id));
+    setConfirmDialog({ isOpen: true, household });
+  };
 
-      try {
-        await deleteHousehold(household.id);
-        showToast('Đã xóa hộ gia đình thành công', 'success');
-        // Refresh full data to ensure resident statuses are synced
-        fetchData();
-      } catch (error) {
-        // Revert if failed
-        setHouseholds(previousHouseholds);
-        showToast('Lỗi khi xóa hộ gia đình', 'error');
-      }
+  const confirmDelete = async () => {
+    if (!confirmDialog.household) return;
+
+    // Optimistic Update
+    const previousHouseholds = [...households];
+    setHouseholds(households.filter(h => h.id !== confirmDialog.household!.id));
+
+    try {
+      await deleteHousehold(confirmDialog.household.id);
+      showToast('Đã xóa hộ gia đình thành công', 'success');
+      // Refresh full data to ensure resident statuses are synced
+      fetchData();
+    } catch (error) {
+      // Revert if failed
+      setHouseholds(previousHouseholds);
+      showToast('Lỗi khi xóa hộ gia đình', 'error');
     }
   };
 
@@ -284,14 +312,14 @@ const HouseholdsPage: React.FC = () => {
                 <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-16 ml-auto animate-pulse"></div></td>
               </tr>
             ))
-          ) : filteredHouseholds.length === 0 ? (
+          ) : paginatedHouseholds.length === 0 ? (
             <tr>
               <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
                 {households.length === 0 ? 'Chưa có hộ gia đình nào. Hãy tạo mới.' : 'Không tìm thấy hộ gia đình phù hợp với bộ lọc.'}
               </td>
             </tr>
           ) : (
-            filteredHouseholds.map((household) => (
+            paginatedHouseholds.map((household) => (
               <tr key={household.id} className="hover:bg-slate-50 transition-colors border-b border-gray-100 last:border-0 group">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
@@ -378,6 +406,47 @@ const HouseholdsPage: React.FC = () => {
             ))
           )}
         </Table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
+            <div className="text-sm text-gray-700">
+              Hiển thị <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> đến{' '}
+              <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredHouseholds.length)}</span> trong tổng số{' '}
+              <span className="font-medium">{filteredHouseholds.length}</span> hộ
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Trước
+              </button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <HouseholdFormModal
@@ -399,6 +468,18 @@ const HouseholdsPage: React.FC = () => {
           viewingHousehold?.memberIds.includes(r.id) ||
           r.id === viewingHousehold?.headOfHouseholdId
         )}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, household: null })}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa hộ gia đình"
+        message={`Bạn có chắc chắn muốn xóa hộ gia đình "${confirmDialog.household?.name}"? Tất cả thành viên sẽ được chuyển về trạng thái chưa có hộ. Hành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        cancelText="Hủy bỏ"
+        type="danger"
       />
 
       {/* Toast Portal */}

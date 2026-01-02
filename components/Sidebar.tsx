@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Calendar, MessageSquare, LogOut, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, MessageSquare, LogOut, Menu, Newspaper, FileText } from 'lucide-react';
 import { Role } from '../types';
 
 interface SidebarProps {
@@ -15,6 +15,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onLogout, 
   const menuItems = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, roles: ['ADMIN'] },
     { id: 'residents', label: 'Quản lý Cư dân', icon: Users, roles: ['ADMIN'] },
+    { id: 'news', label: 'Tin tức', icon: Newspaper, roles: ['ADMIN', 'RESIDENT'] },
+    { id: 'procedures', label: 'Thủ tục hành chính', icon: FileText, roles: ['ADMIN', 'RESIDENT'] },
     { id: 'calendar', label: 'Lịch & Công tác', icon: Calendar, roles: ['ADMIN', 'RESIDENT'] },
     { id: 'community', label: 'Cộng đồng', icon: MessageSquare, roles: ['ADMIN', 'RESIDENT'] },
   ];
@@ -25,17 +27,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onLogout, 
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-20 bg-black/50 lg:hidden"
           onClick={toggleSidebar}
         />
       )}
 
       {/* Sidebar */}
-      <aside 
-        className={`fixed top-0 left-0 z-30 h-screen w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+      <aside
+        className={`fixed top-0 left-0 z-30 h-screen w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-center h-16 border-b border-slate-200">
@@ -58,11 +59,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onChangeView, onLogout, 
                     onChangeView(item.id);
                     if (window.innerWidth < 1024) toggleSidebar();
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                    currentView === item.id
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${currentView === item.id
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                  }`}
+                    }`}
                 >
                   <item.icon size={20} />
                   {item.label}

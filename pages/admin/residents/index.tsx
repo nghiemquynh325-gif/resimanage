@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { Resident } from '../../../types';
 import ResidentFormModal from '../../../components/residents/ResidentFormModal';
 import ResidentDetailModal from '../../../components/residents/ResidentDetailModal';
+import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import AIExcelImportModal from '../../../components/residents/AIExcelImportModal';
 import VotingOverview from '../../../components/VotingOverview';
 import { updateResident, getResidents, deleteResident, getAllResidents, toggleVote, getVotingStats } from '../../../utils/mockApi';
@@ -59,6 +60,10 @@ const ResidentsPage: React.FC = () => {
 
   // Feedback State
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    resident: Resident | null;
+  }>({ isOpen: false, resident: null });
 
   // Voting Statistics State
   const [votingStats, setVotingStats] = useState<Record<string, { total: number; voted: number; percentage: number }>>({});
@@ -286,15 +291,17 @@ const ResidentsPage: React.FC = () => {
    * Handles permanent deletion of a resident.
    */
   const handleDelete = async (resident: Resident) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN cư dân "${resident.fullName}" không?\n\nHành động này KHÔNG THỂ HOÀN TÁC!`)) {
-      return;
-    }
+    setConfirmDialog({ isOpen: true, resident });
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmDialog.resident) return;
 
     const previousResidents = [...residents];
-    setResidents(residents.filter(r => r.id !== resident.id));
+    setResidents(residents.filter(r => r.id !== confirmDialog.resident!.id));
 
     try {
-      await deleteResident(resident.id);
+      await deleteResident(confirmDialog.resident.id);
       showToast('Đã xóa cư dân thành công', 'success');
       fetchResidents();
     } catch (error) {
@@ -1012,6 +1019,18 @@ const ResidentsPage: React.FC = () => {
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         resident={selectedResident}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, resident: null })}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa cư dân"
+        message={`Bạn có chắc chắn muốn XÓA VĨNH VIỄN cư dân "${confirmDialog.resident?.fullName}" không? Hành động này KHÔNG THỂ HOÀN TÁC!`}
+        confirmText="Xóa vĩnh viễn"
+        cancelText="Hủy bỏ"
+        type="danger"
       />
 
       {/* AI Excel Import Modal */}
