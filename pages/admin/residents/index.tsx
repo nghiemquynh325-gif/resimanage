@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Search, Plus, Eye, Edit, Trash2, ChevronLeft, ChevronRight, Ban, CheckCircle2, AlertCircle, Loader2, Filter, FileSpreadsheet, Download } from 'lucide-react';
 import { createPortal } from 'react-dom';
@@ -6,6 +6,7 @@ import { Resident } from '../../../types';
 import ResidentFormModal from '../../../components/residents/ResidentFormModal';
 import ResidentDetailModal from '../../../components/residents/ResidentDetailModal';
 import AIExcelImportModal from '../../../components/residents/AIExcelImportModal';
+import VotingOverview from '../../../components/VotingOverview';
 import { updateResident, getResidents, deleteResident, getAllResidents, toggleVote, getVotingStats } from '../../../utils/mockApi';
 import Table from '../../../components/ui/Table';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader';
@@ -53,6 +54,7 @@ const ResidentsPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isVotingOverviewOpen, setIsVotingOverviewOpen] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | undefined>(undefined);
 
   // Feedback State
@@ -524,22 +526,31 @@ const ResidentsPage: React.FC = () => {
 
 
               {selectedGroup === 'all' ? (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 shadow-sm">
-                  <span className="text-sm font-semibold text-blue-900">Tổng:</span>
-                  <span className="text-sm text-blue-700">
-                    {(() => {
-                      const totalVoted = Object.values(votingStats).reduce((acc, s) => acc + (s as any).voted, 0);
-                      const totalResidents = Object.values(votingStats).reduce((acc, s) => acc + (s as any).total, 0);
-                      const percentage = (totalResidents as number) > 0 ? Math.round((totalVoted / totalResidents) * 100) : 0;
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-blue-200 shadow-sm">
+                    <span className="text-sm font-semibold text-blue-900">Tổng:</span>
+                    <span className="text-sm text-blue-700">
+                      {(() => {
+                        const totalVoted = Object.values(votingStats).reduce((acc, s) => acc + (s as any).voted, 0);
+                        const totalResidents = Object.values(votingStats).reduce((acc, s) => acc + (s as any).total, 0);
+                        const percentage = (totalResidents as number) > 0 ? Math.round(((totalVoted as number) / (totalResidents as number)) * 100) : 0;
 
-                      return (
-                        <>
-                          {totalVoted.toLocaleString()}/{totalResidents.toLocaleString()}
-                          <span className="ml-1 font-medium">({percentage}%)</span>
-                        </>
-                      );
-                    })()}
-                  </span>
+                        return (
+                          <>
+                            {totalVoted.toLocaleString()}/{totalResidents.toLocaleString()}
+                            <span className="ml-1 font-medium">({percentage}%)</span>
+                          </>
+                        );
+                      })()}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsVotingOverviewOpen(true)}
+                    className="flex items-center justify-center p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+                    title="Xem tổng hợp bỏ phiếu theo Tổ"
+                  >
+                    <Eye size={18} />
+                  </button>
                 </div>
               ) : (
                 votingStats[selectedGroup] && (
@@ -855,7 +866,12 @@ const ResidentsPage: React.FC = () => {
                       />
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">{resident.fullName}</div>
+                      <button
+                        onClick={() => handleView(resident)}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                      >
+                        {resident.fullName}
+                      </button>
                       <div className="text-xs text-slate-500">
                         {new Date().getFullYear() - new Date(resident.dob).getFullYear()} tuổi
                         {resident.isPartyMember && <span className="ml-1 text-red-600 font-bold">• Đảng viên</span>}
@@ -1006,6 +1022,13 @@ const ResidentsPage: React.FC = () => {
           showToast('Import dữ liệu thành công', 'success');
           fetchResidents();
         }}
+      />
+
+      {/* Voting Overview Modal */}
+      <VotingOverview
+        isOpen={isVotingOverviewOpen}
+        onClose={() => setIsVotingOverviewOpen(false)}
+        votingStats={votingStats}
       />
 
       {/* Toast Portal */}

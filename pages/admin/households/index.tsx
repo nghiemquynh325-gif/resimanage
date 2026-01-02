@@ -1,9 +1,11 @@
+﻿
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Users, Home, Loader2, CheckCircle2, AlertCircle, Edit, Trash2, Eye } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Household, Resident } from '../../../types';
-import { getHouseholds, getAllResidents, deleteHousehold } from '../../../utils/mockApi';
+import { getHouseholds, deleteHousehold } from '../../../utils/api/households';
+import { getAllResidents } from '../../../utils/api/residents';
 import Table from '../../../components/ui/Table';
 import HouseholdFormModal from '../../../components/households/HouseholdFormModal';
 import HouseholdDetailModal from '../../../components/households/HouseholdDetailModal';
@@ -69,10 +71,10 @@ const HouseholdsPage: React.FC = () => {
     if (trimmed.toLowerCase().startsWith('tổ')) {
       // Extract the number part after "tổ"
       const numberPart = trimmed.substring(2).trim();
-      return numberPart ? `Tổ ${numberPart}` : 'Tổ';
+      return numberPart ? `Tổ ${numberPart} ` : 'Tổ';
     }
     // Otherwise, add "Tổ " prefix
-    return `Tổ ${trimmed}`;
+    return `Tổ ${trimmed} `;
   }, []);
 
   // Get unique units for filter dropdown - Memoized
@@ -125,7 +127,7 @@ const HouseholdsPage: React.FC = () => {
   };
 
   const handleDelete = async (household: Household) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa hộ gia đình "${household.name}" không?`)) {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa hộ gia đình "${household.name}" không ? `)) {
       // Optimistic Update
       const previousHouseholds = [...households];
       setHouseholds(households.filter(h => h.id !== household.id));
@@ -292,7 +294,12 @@ const HouseholdsPage: React.FC = () => {
             filteredHouseholds.map((household) => (
               <tr key={household.id} className="hover:bg-slate-50 transition-colors border-b border-gray-100 last:border-0 group">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">{household.name}</div>
+                  <button
+                    onClick={() => handleView(household)}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                  >
+                    {household.name}
+                  </button>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatUnit(household.unit)}
@@ -396,8 +403,8 @@ const HouseholdsPage: React.FC = () => {
 
       {/* Toast Portal */}
       {toast && createPortal(
-        <div className={`fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-white font-medium animate-in slide-in-from-right duration-300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
-          }`}>
+        <div className={`fixed top - 4 right - 4 z - [100] px - 4 py - 3 rounded - lg shadow - lg flex items - center gap - 3 text - white font - medium animate -in slide -in -from - right duration - 300 ${toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          } `}>
           {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
           <span>{toast.message}</span>
         </div>,

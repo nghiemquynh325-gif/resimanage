@@ -5,8 +5,12 @@ import StatCard from '../../components/dashboard/StatCard';
 import GenderDistributionChart from '../../components/dashboard/GenderDistributionChart';
 import AgeDistributionChart from '../../components/dashboard/AgeDistributionChart';
 import UpcomingEventsWidget from '../../components/dashboard/UpcomingEventsWidget';
+import ResidenceTypePieChart from '../../components/dashboard/ResidenceTypePieChart';
+import EthnicityPieChart from '../../components/dashboard/EthnicityPieChart';
+import ReligionPieChart from '../../components/dashboard/ReligionPieChart';
+import HouseholdCategoryStats from '../../components/dashboard/HouseholdCategoryStats';
 import DashboardSkeleton from '../../components/skeletons/DashboardSkeleton';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Globe, Church } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 const AdminDashboardPage: React.FC = () => {
@@ -50,6 +54,30 @@ const AdminDashboardPage: React.FC = () => {
           />
         ))}
       </div>
+
+      {/* Residence Type Pie Chart */}
+      {data && (
+        <div className="mt-6">
+          <ResidenceTypePieChart data={data.residenceTypes} />
+        </div>
+      )}
+
+      {/* Ethnicity & Religion Pie Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {data && (
+          <>
+            <EthnicityPieChart data={data.ethnicities} />
+            <ReligionPieChart data={data.religions} />
+          </>
+        )}
+      </div>
+
+      {/* Household Categories */}
+      {data && (
+        <div className="mt-6">
+          <HouseholdCategoryStats data={data.householdCategories} />
+        </div>
+      )}
 
       {/* Charts Section */}
       {/* Updated: Stack vertically on mobile/tablet (default), side-by-side on large screens */}

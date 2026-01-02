@@ -1,6 +1,16 @@
 
 import { useCallback } from 'react';
-import { getAdminStatsSummary, getAdminStatsDemographics, getUpcomingEvents } from '../utils/mockApi';
+import {
+  getAdminStatsSummary,
+  getAdminStatsDemographics,
+  getUpcomingEvents
+} from '../utils/mockApi';
+import {
+  getResidenceTypeStats,
+  getEthnicityStats,
+  getReligionStats,
+  getHouseholdCategoryStats
+} from '../utils/dashboardStats';
 import { Users, Home, Calendar, UserPlus } from 'lucide-react';
 import { useApi } from './useApi';
 
@@ -16,6 +26,15 @@ interface DashboardData {
     genderData: Array<{ name: string; value: number }>;
     ageData: Array<{ name: string; count: number }>;
   };
+  residenceTypes: Record<string, number>;
+  ethnicities: Array<{ ethnicity: string; count: number }>;
+  religions: Array<{ religion: string; count: number }>;
+  householdCategories: {
+    businessHouseholds: number;
+    policyHouseholds: number;
+    poorHouseholds: number;
+    totalHouseholds: number;
+  };
   upcomingEvents: any[];
 }
 
@@ -23,22 +42,22 @@ interface DashboardData {
  * Custom hook for the Admin Dashboard.
  * 
  * Aggregation Strategy:
- * Uses `Promise.all` to fetch 3 disparate data sources concurrently:
- * 1. Summary Statistics (Total counts)
- * 2. Demographic Data (Charts)
- * 3. Upcoming Events (List)
+ * Uses `Promise.all` to fetch multiple data sources concurrently
  * 
  * Data Transformation:
- * Transforms raw API responses into UI-component-ready formats (e.g., assigning icons and colors to stat cards)
- * to keep the view component clean and focused on rendering.
+ * Transforms raw API responses into UI-component-ready formats
  */
 export const useAdminDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     // Fetch all required data concurrently
-    const [stats, demographics, events] = await Promise.all([
+    const [stats, demographics, events, residenceTypes, ethnicities, religions, householdCategories] = await Promise.all([
       getAdminStatsSummary(),
       getAdminStatsDemographics(),
-      getUpcomingEvents()
+      getUpcomingEvents(),
+      getResidenceTypeStats(),
+      getEthnicityStats(),
+      getReligionStats(),
+      getHouseholdCategoryStats()
     ]);
 
     // Transform Stats into UI-ready Card format
@@ -76,6 +95,10 @@ export const useAdminDashboard = () => {
     return {
       statCards,
       demographics,
+      residenceTypes,
+      ethnicities,
+      religions,
+      householdCategories,
       upcomingEvents: events
     } as DashboardData;
   }, []);

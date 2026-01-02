@@ -1,4 +1,4 @@
-
+﻿
 export type Role = 'ADMIN' | 'RESIDENT';
 
 export interface Resident {
@@ -50,6 +50,17 @@ export interface Household {
   businessLicenseDate?: string;
   businessOwnerId?: string;
   businessManagerId?: string;
+  // Land certificate fields
+  landPlotNumber?: string; // Thửa đất số
+  landMapSheetNumber?: string; // Tờ bản đồ số
+  certificateIssueNumber?: string; // Số phát hành GCN
+  certificateRegistryNumber?: string; // Số vào sổ cấp giấy
+  // New business property fields
+  businessArea?: number; // Diện tích (m²)
+  businessConstructionYear?: number; // Năm xây dựng
+  businessFloors?: number; // Số tầng
+  businessRooms?: number; // Số phòng
+  businessSector?: string; // Ngành nghề kinh doanh
   // Poor household fields
   isPoorHousehold?: boolean;
   poorHouseholdNotes?: string;

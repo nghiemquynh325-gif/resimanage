@@ -1,0 +1,27 @@
+// ============================================
+// FIX: Auto-refresh viewingHousehold when households data changes
+// ============================================
+// File: pages/admin/households/index.tsx
+// Location: After line 47 (after the initial useEffect)
+
+// ADD THIS CODE:
+
+  // Auto-refresh viewingHousehold when households data changes
+  useEffect(() => {
+    if (viewingHousehold && households.length > 0) {
+      const updated = households.find(h => h.id === viewingHousehold.id);
+      if (updated) {
+        setViewingHousehold(updated);
+      }
+    }
+  }, [households, viewingHousehold]);
+
+// ============================================
+// INSTRUCTIONS:
+// 1. Open: pages/admin/households/index.tsx
+// 2. Find line 47: }, []);
+// 3. After that line, add a blank line
+// 4. Paste the useEffect code above
+// 5. Save the file
+// 6. Hard refresh browser (Ctrl + Shift + R)
+// ============================================

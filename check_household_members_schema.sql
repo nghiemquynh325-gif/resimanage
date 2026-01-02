@@ -1,33 +1,27 @@
--- =====================================================
--- Check household_members table structure
--- =====================================================
-
--- Show table columns
 SELECT 
-  column_name,
-  data_type,
-  is_nullable,
-  column_default
-FROM information_schema.columns
-WHERE table_schema = 'public' 
-  AND table_name = 'household_members'
-ORDER BY ordinal_position;
+    table_name, 
+    column_name, 
+    data_type, 
+    is_nullable
+FROM 
+    information_schema.columns
+WHERE 
+    table_name = 'household_members';
 
--- Show constraints
 SELECT
-  con.conname as constraint_name,
-  con.contype as constraint_type,
-  CASE con.contype
-    WHEN 'p' THEN 'PRIMARY KEY'
-    WHEN 'u' THEN 'UNIQUE'
-    WHEN 'f' THEN 'FOREIGN KEY'
-    WHEN 'c' THEN 'CHECK'
-  END as type_description
-FROM pg_constraint con
-JOIN pg_class rel ON rel.oid = con.conrelid
-JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
-WHERE nsp.nspname = 'public'
-  AND rel.relname = 'household_members';
-
--- Show sample data
-SELECT * FROM public.household_members LIMIT 5;
+    tc.table_schema, 
+    tc.constraint_name, 
+    tc.table_name, 
+    kcu.column_name, 
+    ccu.table_schema AS foreign_table_schema,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM 
+    information_schema.table_constraints AS tc 
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+WHERE tc.table_name = 'household_members';
