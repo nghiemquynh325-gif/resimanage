@@ -22,7 +22,7 @@ const AdminDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-4 pb-8"> {/* Reduced from space-y-6 */}
       {/* Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold text-slate-800">
@@ -43,7 +43,7 @@ const AdminDashboardPage: React.FC = () => {
 
       {/* Stats Grid */}
       {/* Updated: grid-cols-1 for mobile, md:grid-cols-2 for tablet, lg:grid-cols-4 for desktop */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"> {/* Reduced gap from 6 to 4 */}
         {data?.statCards.map((stat) => (
           <StatCard
             key={stat.id}
@@ -55,33 +55,26 @@ const AdminDashboardPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Residence Type Pie Chart */}
+      {/* Household Categories - Compact horizontal layout */}
       {data && (
-        <div className="mt-6">
-          <ResidenceTypePieChart data={data.residenceTypes} />
+        <div className="mt-4"> {/* Reduced from mt-6 */}
+          <HouseholdCategoryStats data={data.householdCategories} />
         </div>
       )}
 
-      {/* Ethnicity & Religion Pie Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Three Pie Charts in one row - Compact layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4"> {/* 3 columns on large screens, reduced gap and margin */}
         {data && (
           <>
+            <ResidenceTypePieChart data={data.residenceTypes} />
             <EthnicityPieChart data={data.ethnicities} />
             <ReligionPieChart data={data.religions} />
           </>
         )}
       </div>
 
-      {/* Household Categories */}
-      {data && (
-        <div className="mt-6">
-          <HouseholdCategoryStats data={data.householdCategories} />
-        </div>
-      )}
-
-      {/* Charts Section */}
-      {/* Updated: Stack vertically on mobile/tablet (default), side-by-side on large screens */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Demographics Section - Gender & Age side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4"> {/* Reduced gap and margin */}
         {data && (
           <>
             <GenderDistributionChart data={data.demographics.genderData} />
@@ -91,7 +84,7 @@ const AdminDashboardPage: React.FC = () => {
       </div>
 
       {/* Upcoming Events Widget */}
-      <div className="mt-6">
+      <div className="mt-4"> {/* Reduced from mt-6 */}
         <UpcomingEventsWidget />
       </div>
     </div>

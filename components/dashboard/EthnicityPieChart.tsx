@@ -1,5 +1,4 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Globe } from 'lucide-react';
 
 interface EthnicityData {
@@ -34,67 +33,46 @@ const EthnicityPieChart: React.FC<EthnicityPieChartProps> = ({ data }) => {
     const total = chartData.reduce((sum, item) => sum + item.value, 0);
 
     // Custom label to show percentage
-    const renderLabel = (entry: any) => {
-        const percent = ((entry.value / total) * 100).toFixed(1);
-        return `${percent}%`;
-    };
-
     return (
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200"> {/* Reduced padding */}
             {/* Header */}
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-2 mb-4"> {/* Reduced gap and mb */}
                 <div className="p-2 bg-emerald-100 text-emerald-600 rounded-lg">
-                    <Globe size={20} />
+                    <Globe size={18} /> {/* Reduced size */}
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-slate-800">Phân bố Dân tộc</h3>
-                    <p className="text-sm text-slate-500">Thống kê theo dân tộc</p>
+                    <h3 className="text-base font-bold text-slate-800">Phân bố Dân tộc</h3> {/* Reduced from lg */}
+                    <p className="text-xs text-slate-500">Thống kê theo dân tộc</p> {/* Reduced from sm */}
                 </div>
             </div>
 
-            {/* Pie Chart */}
-            <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                    <Pie
-                        data={chartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={renderLabel}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                    >
-                        {chartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                    </Pie>
-                    <Tooltip
-                        formatter={(value: number) => [`${value} người`, 'Số lượng']}
-                        contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            padding: '8px 12px'
-                        }}
-                    />
-                    <Legend
-                        verticalAlign="middle"
-                        align="right"
-                        layout="vertical"
-                        iconType="circle"
-                        formatter={(value, entry: any) => {
-                            const count = entry.payload.value;
-                            const percent = ((count / total) * 100).toFixed(1);
-                            return `${value}: ${count} người (${percent}%)`;
-                        }}
-                    />
-                </PieChart>
-            </ResponsiveContainer>
+            {/* Horizontal Bar Chart with Stats */}
+            <div className="space-y-3">
+                {chartData.map((item) => {
+                    const percentage = ((item.value / total) * 100).toFixed(1);
+                    return (
+                        <div key={item.name} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                                <span className="font-medium text-slate-700">{item.name}</span>
+                                <span className="text-slate-600">{item.value} người ({percentage}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                        width: `${percentage}%`,
+                                        backgroundColor: item.color
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
 
             {/* Total */}
-            <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-                <p className="text-sm text-slate-600">
+            <div className="mt-3 pt-3 border-t border-slate-100">
+                <p className="text-xs text-slate-600 text-center">
                     Tổng số: <span className="font-semibold text-slate-800">{total} người</span>
                 </p>
             </div>

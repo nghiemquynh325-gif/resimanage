@@ -152,7 +152,7 @@ export interface AdminStaff {
 }
 
 // Association Management Types
-export type AssociationType = 'veterans' | 'women' | 'youth' | 'red_cross' | 'discharged_military' | 'party_member_213' | 'militia' | 'security_force';
+export type AssociationType = 'veterans' | 'women' | 'youth' | 'red_cross' | 'discharged_military' | 'party_member_213' | 'militia' | 'security_force' | 'front_committee';
 export type AssociationRole = 'president' | 'vice_president' | 'member' | 'squad_leader' | 'team_leader' | 'fighter' | 'group_leader' | 'deputy_leader' | 'group_member';
 
 export interface Association {

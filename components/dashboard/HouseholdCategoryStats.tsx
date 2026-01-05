@@ -49,7 +49,7 @@ const HouseholdCategoryStats: React.FC<HouseholdCategoryStatsProps> = ({ data })
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Reduced gap from 6 to 4 */}
             {categories.map((category) => {
                 const Icon = category.icon;
                 const percentage = getPercentage(category.count);
@@ -57,19 +57,19 @@ const HouseholdCategoryStats: React.FC<HouseholdCategoryStatsProps> = ({ data })
                 return (
                     <div
                         key={category.label}
-                        className={`${category.bgColor} rounded-xl p-6 border ${category.borderColor} shadow-sm hover:shadow-md transition-shadow`}
+                        className={`${category.bgColor} rounded-xl p-4 border ${category.borderColor} shadow-sm hover:shadow-md transition-shadow`}
                     >
-                        <div className="flex items-center justify-between mb-4">
-                            <div className={`p-3 ${category.iconBgColor} rounded-lg`}>
-                                <Icon size={24} className={category.iconColor} />
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`p-2 ${category.iconBgColor} rounded-lg`}>
+                                <Icon size={20} className={category.iconColor} />
                             </div>
                             <span className={`text-sm font-semibold ${category.textColor}`}>
                                 {percentage}%
                             </span>
                         </div>
 
-                        <h4 className="text-sm font-medium text-slate-600 mb-2">{category.label}</h4>
-                        <div className="text-3xl font-bold text-slate-800 mb-3">
+                        <h4 className="text-sm font-medium text-slate-600 mb-1">{category.label}</h4>
+                        <div className="text-2xl font-bold text-slate-800 mb-2">
                             {category.count.toLocaleString()}
                         </div>
 

@@ -26,6 +26,7 @@ const ASSOCIATION_CONFIG: Record<AssociationType, { icon: any; color: string; bg
     party_member_213: { icon: Flag, color: 'text-red-700', bgColor: 'bg-red-50' },
     militia: { icon: Shield, color: 'text-orange-600', bgColor: 'bg-orange-50' },
     security_force: { icon: ShieldCheck, color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
+    front_committee: { icon: Users, color: 'text-purple-600', bgColor: 'bg-purple-50' },
 };
 
 const AssociationsPage: React.FC = () => {
@@ -249,16 +250,31 @@ const AssociationsPage: React.FC = () => {
                                             const resident = member.resident;
                                             if (!resident) return null;
 
-                                            const roleLabels: Record<AssociationRole, string> = {
-                                                president: 'Chi hội trưởng',
-                                                vice_president: 'Chi hội phó',
-                                                member: 'Hội viên',
-                                                squad_leader: 'Khu đội trưởng',
-                                                team_leader: 'Tiểu đội trưởng',
-                                                fighter: 'Chiến sĩ',
-                                                group_leader: 'Tổ trưởng',
-                                                deputy_leader: 'Tổ phó',
-                                                group_member: 'Tổ viên',
+                                            // Define role labels based on association type
+                                            const getRoleLabel = (role: AssociationRole): string => {
+                                                // Custom labels for Front Committee
+                                                if (selectedAssociation?.type === 'front_committee') {
+                                                    switch (role) {
+                                                        case 'president': return 'Trưởng Ban Công Tác Mặt Trận';
+                                                        case 'vice_president': return 'Phó Ban Công Tác Mặt Trận';
+                                                        case 'member': return 'Thành viên';
+                                                        default: return role;
+                                                    }
+                                                }
+
+                                                // Default labels for other associations
+                                                const defaultLabels: Record<AssociationRole, string> = {
+                                                    president: 'Chi hội trưởng',
+                                                    vice_president: 'Chi hội phó',
+                                                    member: 'Hội viên',
+                                                    squad_leader: 'Khu đội trưởng',
+                                                    team_leader: 'Tiểu đội trưởng',
+                                                    fighter: 'Chiến sĩ',
+                                                    group_leader: 'Tổ trưởng',
+                                                    deputy_leader: 'Tổ phó',
+                                                    group_member: 'Tổ viên',
+                                                };
+                                                return defaultLabels[role] || role;
                                             };
 
                                             const roleBadgeColors: Record<AssociationRole, string> = {
@@ -304,7 +320,7 @@ const AssociationsPage: React.FC = () => {
                                                                 className={`px-2 py-0.5 text-xs font-medium rounded-full border ${roleBadgeColors[member.role]
                                                                     }`}
                                                             >
-                                                                {roleLabels[member.role]}
+                                                                {getRoleLabel(member.role)}
                                                             </span>
                                                         </div>
                                                         <p className="text-sm text-gray-600">

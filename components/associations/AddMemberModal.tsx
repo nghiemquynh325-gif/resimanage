@@ -300,6 +300,15 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                                     </>
                                 )}
 
+                                {/* Front Committee roles */}
+                                {associationType === 'front_committee' && (
+                                    <>
+                                        <option value="member">Thành viên</option>
+                                        <option value="vice_president">Phó Ban Công Tác Mặt Trận</option>
+                                        <option value="president">Trưởng Ban Công Tác Mặt Trận</option>
+                                    </>
+                                )}
+
                                 {/* Militia roles */}
                                 {associationType === 'militia' && (
                                     <>
