@@ -80,6 +80,7 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
     const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
     const [relationships, setRelationships] = useState<Record<string, string>>({});
     const [memberSearchQuery, setMemberSearchQuery] = useState('');
+    const [formError, setFormError] = useState<string>('');
 
     const {
         register,
@@ -201,8 +202,17 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
                 setValue('headOfHouseholdId', '');
             }
         } else {
-            setSelectedMembers(prev => [...prev, id]);
+            setSelectedMembers(prev => {
+                const newMembers = [...prev, id];
+                // Auto-select as head if this is the only member
+                if (newMembers.length === 1) {
+                    setValue('headOfHouseholdId', id, { shouldValidate: true });
+                }
+                return newMembers;
+            });
         }
+        // Clear any previous errors when user interacts
+        setFormError('');
     };
 
     const handleRelationshipChange = (id: string, value: string) => {
@@ -210,19 +220,25 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
     };
 
     const onSubmit = async (data: HouseholdFormData) => {
-        if (!selectedHead) {
-            alert('Vui lòng chọn chủ hộ');
+        // Clear previous errors
+        setFormError('');
+
+        // Validate head of household (only if there are members)
+        if (selectedMembers.length > 0 && !selectedHead) {
+            setFormError('Vui lòng chọn chủ hộ từ danh sách thành viên.');
             return;
         }
+
+        // Warn about 0-member households but allow save (Option A)
         if (selectedMembers.length === 0) {
-            alert('Vui lòng chọn ít nhất một thành viên');
-            return;
+            // Allow save but show warning - user can add members later
+            console.warn('Creating/updating household with 0 members');
         }
 
         // Validate business fields if business household
         if (data.isBusiness) {
             if (!data.businessName || !data.businessLicenseNumber || !data.businessLicenseDate) {
-                alert('Vui lòng điền đầy đủ thông tin kinh doanh');
+                setFormError('Vui lòng điền đầy đủ thông tin kinh doanh (Tên cơ sở, Số giấy phép, Ngày cấp).');
                 return;
             }
         }
@@ -234,10 +250,10 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
             delete cleanRelationships[data.headOfHouseholdId];
 
             const payload: any = {
-                name: `Hộ ${selectedHead.fullName}`,
-                address: selectedHead.address || 'Chưa cập nhật',
+                name: selectedHead ? `Hộ ${selectedHead.fullName}` : (initialData?.name || 'Hộ chưa có tên'),
+                address: selectedHead?.address || initialData?.address || 'Chưa cập nhật',
                 unit: data.unit,
-                headOfHouseholdId: data.headOfHouseholdId,
+                headOfHouseholdId: data.headOfHouseholdId || null, // Allow null for 0-member households
                 memberIds: selectedMembers,
                 relationships: cleanRelationships,
                 isBusiness: data.isBusiness || false,
@@ -284,7 +300,7 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
             onClose();
         } catch (error) {
             console.error(error);
-            alert('Có lỗi xảy ra khi lưu thông tin.');
+            setFormError('Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.');
         } finally {
             setIsSubmitting(false);
         }
@@ -773,6 +789,30 @@ const HouseholdFormModal: React.FC<HouseholdFormModalProps> = ({
                                 <p>Hệ thống sẽ tự động lấy địa chỉ của chủ hộ làm địa chỉ chung cho hộ gia đình.</p>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* Error Message Display */}
+                {formError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <span>{formError}</span>
+                    </div>
+                )}
+
+                {/* Warning for 0-member households */}
+                {selectedMembers.length === 0 && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>⚠️ Hộ gia đình chưa có thành viên. Bạn có thể thêm thành viên sau khi {initialData ? 'cập nhật' : 'tạo'} hộ.</span>
                     </div>
                 )}
 

@@ -8,7 +8,7 @@ import ResidentDetailModal from '../../../components/residents/ResidentDetailMod
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import AIExcelImportModal from '../../../components/residents/AIExcelImportModal';
 import VotingOverview from '../../../components/VotingOverview';
-import { updateResident, getResidents, deleteResident, getAllResidents, toggleVote, getVotingStats } from '../../../utils/mockApi';
+import { updateResident, getResidents, deleteResident, bulkDeleteResidents, getAllResidents, toggleVote, getVotingStats, getUniqueReligions, getUniqueEthnicities, getResidenceTypeStats } from '../../../utils/mockApi';
 import Table from '../../../components/ui/Table';
 import SkeletonLoader from '../../../components/ui/SkeletonLoader';
 import * as XLSX from 'xlsx';
@@ -42,9 +42,16 @@ const ResidentsPage: React.FC = () => {
   const [filterReligion, setFilterReligion] = useState('all');
   const [filterUnit, setFilterUnit] = useState('all'); // New: Filter by Tổ
   const [filterVotingStatus, setFilterVotingStatus] = useState('all'); // New: Filter by voting status
+  const [filterResidenceType, setFilterResidenceType] = useState('all'); // New: Filter by residence type
 
   // UI State
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Autocomplete State
+  const [religionSuggestions, setReligionSuggestions] = useState<string[]>([]);
+  const [ethnicitySuggestions, setEthnicitySuggestions] = useState<string[]>([]);
+  const [showReligionDropdown, setShowReligionDropdown] = useState(false);
+  const [showEthnicityDropdown, setShowEthnicityDropdown] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -69,6 +76,13 @@ const ResidentsPage: React.FC = () => {
   const [votingStats, setVotingStats] = useState<Record<string, { total: number; voted: number; percentage: number }>>({});
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
+  // Residence Type Statistics State
+  const [residenceTypeStats, setResidenceTypeStats] = useState<Record<string, number>>({});
+
+  // Bulk Selection State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+
   // Helper: Show Toast - Memoized to prevent re-creation
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -89,41 +103,33 @@ const ResidentsPage: React.FC = () => {
         specialFilter: filterSpecial,
         ethnicity: filterEthnicity,
         religion: filterReligion,
+        unit: filterUnit, // FIXED: Now passed to server-side filter
+        votingStatus: filterVotingStatus, // FIXED: Now passed to server-side filter
+        residenceType: filterResidenceType, // NEW: Residence type filter
         page: currentPage,
         limit: ITEMS_PER_PAGE
       });
 
-      // Apply client-side filters for unit and voting status
-      let filteredData = response.data;
-
-      if (filterUnit !== 'all') {
-        filteredData = filteredData.filter(r => r.unit === filterUnit);
-      }
-
-      if (filterVotingStatus === 'voted') {
-        filteredData = filteredData.filter(r => r.hasVoted === true);
-      } else if (filterVotingStatus === 'not_voted') {
-        filteredData = filteredData.filter(r => !r.hasVoted);
-      }
-
-      setResidents(filteredData);
+      // FIXED: Use server response directly - no more client-side filtering!
+      setResidents(response.data);
       setTotalPages(response.totalPages);
-      setTotalRecords(filteredData.length);
+      setTotalRecords(response.total); // FIXED: Use server total, not filtered length
     } catch (err: any) {
       setError('Có lỗi xảy ra khi tải dữ liệu cư dân.');
       setResidents([]);
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, currentPage]);
+  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, filterResidenceType, currentPage]);
 
   // Debounced Effect for Search & Filter
+  // FIXED: Added fetchResidents to dependencies to trigger re-fetch when filters change
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       fetchResidents();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, currentPage]);
+  }, [fetchResidents]); // FIXED: Now depends on fetchResidents which includes all filter states
 
   // Load voting statistics - Optimized to only run when residents length changes
   const residentsLength = residents.length;
@@ -141,6 +147,40 @@ const ResidentsPage: React.FC = () => {
       loadVotingStats();
     }
   }, [residentsLength]);
+
+  // Load autocomplete suggestions for Religion and Ethnicity
+  useEffect(() => {
+    const loadSuggestions = async () => {
+      try {
+        const [religions, ethnicities] = await Promise.all([
+          getUniqueReligions(),
+          getUniqueEthnicities()
+        ]);
+        setReligionSuggestions(religions);
+        setEthnicitySuggestions(ethnicities);
+      } catch (error) {
+        console.error('Failed to load autocomplete suggestions:', error);
+      }
+    };
+    loadSuggestions();
+  }, []);
+
+  // Load residence type statistics
+  useEffect(() => {
+    const loadResidenceTypeStats = async () => {
+      try {
+        const stats = await getResidenceTypeStats();
+        setResidenceTypeStats(stats);
+      } catch (error) {
+        console.error('Failed to load residence type stats:', error);
+      }
+    };
+
+    if (residentsLength > 0) {
+      loadResidenceTypeStats();
+    }
+  }, [residentsLength]);
+
 
   // Handlers - Wrapped with useCallback to prevent re-creation
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,6 +224,7 @@ const ResidentsPage: React.FC = () => {
   }, []);
 
   const handleClearAllFilters = useCallback(() => {
+    setSearchQuery(''); // FIXED: Clear search input field
     setFilterStatus('all');
     setFilterGender('all');
     setFilterAgeFrom('');
@@ -193,6 +234,7 @@ const ResidentsPage: React.FC = () => {
     setFilterReligion('all');
     setFilterUnit('all');
     setFilterVotingStatus('all');
+    setFilterResidenceType('all'); // NEW: Clear residence type filter
     setCurrentPage(1);
   }, []);
 
@@ -226,8 +268,9 @@ const ResidentsPage: React.FC = () => {
     if (filterReligion !== 'all') count++;
     if (filterUnit !== 'all') count++;
     if (filterVotingStatus !== 'all') count++;
+    if (filterResidenceType !== 'all') count++; // NEW: Include residence type filter
     return count;
-  }, [filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus]);
+  }, [filterStatus, filterGender, filterAgeFrom, filterAgeTo, filterSpecial, filterEthnicity, filterReligion, filterUnit, filterVotingStatus, filterResidenceType]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -307,6 +350,93 @@ const ResidentsPage: React.FC = () => {
     } catch (error) {
       setResidents(previousResidents);
       showToast('Lỗi khi xóa cư dân', 'error');
+    }
+  };
+
+  /**
+   * Handle checkbox selection for individual resident
+   */
+  const handleSelectResident = (id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(selectedId => selectedId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  /**
+   * Handle select all checkbox
+   */
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedIds([]);
+      setSelectAll(false);
+    } else {
+      setSelectedIds(residents.map(r => r.id));
+      setSelectAll(true);
+    }
+  };
+
+  /**
+   * Clear all selections
+   */
+  const handleClearSelection = () => {
+    setSelectedIds([]);
+    setSelectAll(false);
+  };
+
+  /**
+   * Handle bulk delete - show confirmation
+   */
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+
+    const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn xóa ${selectedIds.length} cư dân đã chọn?\n\n` +
+      `Hành động này sẽ:\n` +
+      `- Xóa vĩnh viễn ${selectedIds.length} cư dân\n` +
+      `- Xóa khỏi hộ gia đình (nếu có)\n` +
+      `- Xóa khỏi các chi hội (nếu có)\n\n` +
+      `Hành động này KHÔNG THỂ hoàn tác!`
+    );
+
+    if (confirmed) {
+      confirmBulkDelete();
+    }
+  };
+
+  /**
+   * Execute bulk delete with optimistic UI
+   */
+  const confirmBulkDelete = async () => {
+    const idsToDelete = [...selectedIds];
+    const previousResidents = [...residents];
+
+    // Optimistic update - remove from UI immediately
+    setResidents(residents.filter(r => !idsToDelete.includes(r.id)));
+    setSelectedIds([]);
+    setSelectAll(false);
+
+    try {
+      const result = await bulkDeleteResidents(idsToDelete);
+
+      if (result.failed > 0) {
+        showToast(
+          `Xóa thành công ${result.success} cư dân. Thất bại: ${result.failed}`,
+          'error'
+        );
+        // Refresh to get accurate state
+        fetchResidents();
+      } else {
+        showToast(`Đã xóa thành công ${result.success} cư dân`, 'success');
+        fetchResidents();
+      }
+    } catch (error) {
+      // Revert on complete failure
+      setResidents(previousResidents);
+      showToast('Lỗi khi xóa cư dân hàng loạt', 'error');
     }
   };
 
@@ -480,6 +610,7 @@ const ResidentsPage: React.FC = () => {
   };
 
   const columns = [
+    "", // Checkbox column
     "Họ và Tên",
     "Tổ",
     "Đã bỏ phiếu",
@@ -590,6 +721,16 @@ const ResidentsPage: React.FC = () => {
           </div>
 
           <div className="flex gap-2 w-full md:w-auto">
+            {selectedIds.length > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95 whitespace-nowrap"
+              >
+                <Trash2 size={18} />
+                Xóa {selectedIds.length} mục
+              </button>
+            )}
+
             <button
               onClick={handleExportExcel}
               className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95 whitespace-nowrap"
@@ -747,43 +888,116 @@ const ResidentsPage: React.FC = () => {
               </select>
             </div>
 
-            {/* Ethnicity Filter */}
-            <div>
+            {/* Ethnicity Filter - AUTOCOMPLETE */}
+            <div className="relative">
               <label className="block text-xs font-medium text-slate-600 mb-1.5">Dân tộc</label>
-              <select
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                value={filterEthnicity}
-                onChange={handleEthnicityChange}
-              >
-                <option value="all">Tất cả dân tộc</option>
-                <option value="Kinh">Kinh</option>
-                <option value="Tày">Tày</option>
-                <option value="Thái">Thái</option>
-                <option value="Hoa">Hoa</option>
-                <option value="Khơ Me">Khơ Me</option>
-                <option value="Mường">Mường</option>
-                <option value="Nùng">Nùng</option>
-                <option value="H'Mông">H'Mông</option>
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Nhập dân tộc..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                  value={filterEthnicity === 'all' ? '' : filterEthnicity}
+                  onChange={(e) => {
+                    setFilterEthnicity(e.target.value || 'all');
+                    setShowEthnicityDropdown(true);
+                    setCurrentPage(1);
+                  }}
+                  onFocus={() => setShowEthnicityDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowEthnicityDropdown(false), 200)}
+                />
+                {filterEthnicity && filterEthnicity !== 'all' && (
+                  <button
+                    onClick={() => {
+                      setFilterEthnicity('all');
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {showEthnicityDropdown && filterEthnicity && filterEthnicity !== 'all' && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {ethnicitySuggestions
+                    .filter(e => e.toLowerCase().includes(filterEthnicity.toLowerCase()))
+                    .map(ethnicity => (
+                      <div
+                        key={ethnicity}
+                        onMouseDown={() => {
+                          setFilterEthnicity(ethnicity);
+                          setShowEthnicityDropdown(false);
+                          setCurrentPage(1);
+                        }}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                      >
+                        {ethnicity}
+                      </div>
+                    ))
+                  }
+                  {ethnicitySuggestions.filter(e => e.toLowerCase().includes(filterEthnicity.toLowerCase())).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-400">Không tìm thấy kết quả</div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Religion Filter */}
-            <div>
+            {/* Religion Filter - AUTOCOMPLETE */}
+            <div className="relative">
               <label className="block text-xs font-medium text-slate-600 mb-1.5">Tôn giáo</label>
-              <select
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                value={filterReligion}
-                onChange={handleReligionChange}
-              >
-                <option value="all">Tất cả tôn giáo</option>
-                <option value="Không">Không</option>
-                <option value="Phật giáo">Phật giáo</option>
-                <option value="Công giáo">Công giáo</option>
-                <option value="Tin Lành">Tin Lành</option>
-                <option value="Hòa Hảo">Hòa Hảo</option>
-                <option value="Cao Đài">Cao Đài</option>
-                <option value="Hồi giáo">Hồi giáo</option>
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Nhập tôn giáo..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+                  value={filterReligion === 'all' ? '' : filterReligion}
+                  onChange={(e) => {
+                    setFilterReligion(e.target.value || 'all');
+                    setShowReligionDropdown(true);
+                    setCurrentPage(1);
+                  }}
+                  onFocus={() => setShowReligionDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowReligionDropdown(false), 200)}
+                />
+                {filterReligion && filterReligion !== 'all' && (
+                  <button
+                    onClick={() => {
+                      setFilterReligion('all');
+                      setCurrentPage(1);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {showReligionDropdown && filterReligion && filterReligion !== 'all' && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {religionSuggestions
+                    .filter(r => r.toLowerCase().includes(filterReligion.toLowerCase()))
+                    .map(religion => (
+                      <div
+                        key={religion}
+                        onMouseDown={() => {
+                          setFilterReligion(religion);
+                          setShowReligionDropdown(false);
+                          setCurrentPage(1);
+                        }}
+                        className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm"
+                      >
+                        {religion}
+                      </div>
+                    ))
+                  }
+                  {religionSuggestions.filter(r => r.toLowerCase().includes(filterReligion.toLowerCase())).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-slate-400">Không tìm thấy kết quả</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Unit (Tổ) Filter */}
@@ -824,17 +1038,59 @@ const ResidentsPage: React.FC = () => {
                 <option value="not_voted">Chưa bỏ phiếu</option>
               </select>
             </div>
+
+            {/* Residence Type Filter - NEW */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Loại hình cư trú
+                {Object.keys(residenceTypeStats).length > 0 && (
+                  <span className="ml-1 text-xs text-slate-400">
+                    (Tổng: {Object.values(residenceTypeStats).reduce((a: number, b: number) => a + b, 0)})
+                  </span>
+                )}
+              </label>
+              <select
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                value={filterResidenceType}
+                onChange={(e) => { setFilterResidenceType(e.target.value); setCurrentPage(1); }}
+              >
+                <option value="all">Tất cả loại hình</option>
+                <option value="Thường trú">
+                  Thường trú {residenceTypeStats['Thường trú'] ? `(${residenceTypeStats['Thường trú']} người)` : ''}
+                </option>
+                <option value="Tạm trú">
+                  Tạm trú {residenceTypeStats['Tạm trú'] ? `(${residenceTypeStats['Tạm trú']} người)` : ''}
+                </option>
+                <option value="Tạm vắng">
+                  Tạm vắng {residenceTypeStats['Tạm vắng'] ? `(${residenceTypeStats['Tạm vắng']} người)` : ''}
+                </option>
+                <option value="Tạm trú có nhà">
+                  Tạm trú có nhà {residenceTypeStats['Tạm trú có nhà'] ? `(${residenceTypeStats['Tạm trú có nhà']} người)` : ''}
+                </option>
+              </select>
+            </div>
           </div>
         )}
       </div>
 
       {/* Main Content Card */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-100">
-        <Table headers={columns}>
+        <Table
+          headers={columns}
+          headerCheckbox={
+            <input
+              type="checkbox"
+              checked={selectAll}
+              onChange={handleSelectAll}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+            />
+          }
+        >
           {isLoading ? (
             // Skeleton Loading State
             Array.from({ length: 5 }).map((_, idx) => (
               <tr key={idx}>
+                <td className="px-6 py-4"><SkeletonLoader className="h-4 w-16" /></td>
                 <td className="px-6 py-4"><SkeletonLoader className="h-4 w-32" /></td>
                 <td className="px-6 py-4"><SkeletonLoader className="h-4 w-16" /></td>
                 <td className="px-6 py-4"><SkeletonLoader className="h-4 w-40" /></td>
@@ -847,19 +1103,27 @@ const ResidentsPage: React.FC = () => {
             ))
           ) : error ? (
             <tr>
-              <td colSpan={8} className="px-6 py-10 text-center text-red-500">
+              <td colSpan={9} className="px-6 py-10 text-center text-red-500">
                 {error}
               </td>
             </tr>
           ) : residents.length === 0 ? (
             <tr>
-              <td colSpan={8} className="px-6 py-10 text-center text-slate-500">
+              <td colSpan={9} className="px-6 py-10 text-center text-slate-500">
                 Không tìm thấy dữ liệu phù hợp.
               </td>
             </tr>
           ) : (
             residents.map((resident) => (
               <tr key={resident.id} className="hover:bg-slate-50 transition-colors border-b border-gray-100 last:border-0 group">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(resident.id)}
+                    onChange={() => handleSelectResident(resident.id)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer"
+                  />
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">

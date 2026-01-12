@@ -447,8 +447,15 @@ export const getResidents = async (params: any) => {
     }
   }
 
-  if (params.ethnicity && params.ethnicity !== 'all') query = query.eq('ethnicity', params.ethnicity);
-  if (params.religion && params.religion !== 'all') query = query.eq('religion', params.religion);
+  // Ethnicity Filter - UPDATED for partial match (fuzzy search)
+  if (params.ethnicity && params.ethnicity !== 'all') {
+    query = query.ilike('ethnicity', `%${params.ethnicity}%`);
+  }
+
+  // Religion Filter - UPDATED for partial match (fuzzy search)
+  if (params.religion && params.religion !== 'all') {
+    query = query.ilike('religion', `%${params.religion}%`);
+  }
 
   // Gender Filter
   if (params.gender && params.gender !== 'all') {
@@ -480,6 +487,26 @@ export const getResidents = async (params: any) => {
     } else {
       query = query.eq('special_status', params.specialFilter);
     }
+  }
+
+  // Unit (Tổ) Filter - FIXED: Now filters at database level before pagination
+  if (params.unit && params.unit !== 'all') {
+    query = query.eq('unit', params.unit);
+  }
+
+  // Voting Status Filter - FIXED: Now filters at database level before pagination
+  if (params.votingStatus && params.votingStatus !== 'all') {
+    if (params.votingStatus === 'voted') {
+      query = query.eq('has_voted', true);
+    } else if (params.votingStatus === 'not_voted') {
+      // Handle both null and false values for "not voted"
+      query = query.or('has_voted.is.null,has_voted.eq.false');
+    }
+  }
+
+  // Residence Type Filter - NEW: Filter by residence type
+  if (params.residenceType && params.residenceType !== 'all') {
+    query = query.eq('residence_type', params.residenceType);
   }
 
   const page = params.page || 1;
@@ -515,6 +542,83 @@ export const getAllResidents = async () => {
     return [];
   }
   return (data || []).map(mapResidentFromDb);
+};
+
+/**
+ * Get unique religion values for autocomplete
+ * @returns Array of unique religion strings, sorted alphabetically
+ */
+export const getUniqueReligions = async (): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('residents')
+    .select('religion')
+    .not('religion', 'is', null);
+
+  if (error) {
+    console.error('Error fetching religions:', error);
+    return [];
+  }
+
+  // Extract unique values and sort
+  const unique = [...new Set(data.map(r => r.religion))].filter(Boolean) as string[];
+  return unique.sort();
+};
+
+/**
+ * Get unique ethnicity values for autocomplete
+ * @returns Array of unique ethnicity strings, sorted alphabetically
+ */
+export const getUniqueEthnicities = async (): Promise<string[]> => {
+  const { data, error } = await supabase
+    .from('residents')
+    .select('ethnicity')
+    .not('ethnicity', 'is', null);
+
+  if (error) {
+    console.error('Error fetching ethnicities:', error);
+    return [];
+  }
+
+  // Extract unique values and sort
+  const unique = [...new Set(data.map(r => r.ethnicity))].filter(Boolean) as string[];
+  return unique.sort();
+};
+
+/**
+ * Get residence type statistics
+ * @returns Object with count for each residence type
+ */
+export const getResidenceTypeStats = async (): Promise<Record<string, number>> => {
+  const { data, error } = await supabase
+    .from('residents')
+    .select('residence_type')
+    .in('status', ['active', 'Thường trú', 'Tạm trú', 'Tạm trú có nhà']);
+
+  if (error) {
+    console.error('Error fetching residence type stats:', error);
+    return {
+      'Thường trú': 0,
+      'Tạm trú': 0,
+      'Tạm vắng': 0,
+      'Tạm trú có nhà': 0
+    };
+  }
+
+  const stats: Record<string, number> = {
+    'Thường trú': 0,
+    'Tạm trú': 0,
+    'Tạm vắng': 0,
+    'Tạm trú có nhà': 0
+  };
+
+  data.forEach(resident => {
+    const type = resident.residence_type || 'Thường trú';
+    if (stats[type] !== undefined) {
+      stats[type]++;
+    }
+  });
+
+  return stats;
 };
 
 // ... createResident, registerResident, updateResident ...
@@ -626,9 +730,70 @@ export const deleteResident = async (id: string) => {
   // 1. Remove from any household_members
   await supabase.from('household_members').delete().eq('resident_id', id);
 
-  // 2. Delete the resident
+  // 2. Remove from any association_members
+  await supabase.from('association_members').delete().eq('resident_id', id);
+
+  // 3. Delete the resident
   const { error } = await supabase.from('residents').delete().eq('id', id);
   if (error) throw new Error(error.message);
+};
+
+/**
+ * Bulk delete residents
+ * Deletes multiple residents in batches with cascade cleanup
+ * 
+ * @param ids - Array of resident IDs to delete
+ * @returns Object with success count, failed count, and error details
+ */
+export const bulkDeleteResidents = async (ids: string[]): Promise<{
+  success: number;
+  failed: number;
+  errors: Array<{ id: string; error: string }>;
+}> => {
+  const result = {
+    success: 0,
+    failed: 0,
+    errors: [] as Array<{ id: string; error: string }>
+  };
+
+  // Process in batches of 10 to avoid overwhelming the database
+  const batchSize = 10;
+
+  for (let i = 0; i < ids.length; i += batchSize) {
+    const batch = ids.slice(i, i + batchSize);
+
+    for (const id of batch) {
+      try {
+        // 1. Remove from household_members
+        await supabase.from('household_members').delete().eq('resident_id', id);
+
+        // 2. Remove from association_members
+        await supabase.from('association_members').delete().eq('resident_id', id);
+
+        // 3. Delete the resident
+        const { error } = await supabase.from('residents').delete().eq('id', id);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        result.success++;
+      } catch (error: any) {
+        result.failed++;
+        result.errors.push({
+          id,
+          error: error.message || 'Unknown error'
+        });
+      }
+    }
+
+    // Small delay between batches to avoid rate limiting
+    if (i + batchSize < ids.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  return result;
 };
 
 /**
