@@ -1,0 +1,97 @@
+﻿Đang đọc file: C:\Users\Admin\Downloads\qqe.xlsx
+
+Tổng số dòng: 7613
+
+=== TÊN CÁC CỘT (với mã hex để kiểm tra ký tự đặc biệt) ===
+
+1. "STT"
+   Hex: 535454
+   Length: 3 chars
+
+2. "HỌ VÀ TÊN"
+   Hex: 48e1bb8c2056c3802054c38a4e
+   Length: 9 chars
+
+3. "EMAIL"
+   Hex: 454d41494c
+   Length: 5 chars
+
+4. "NGÀY SINH"
+   Hex: 4e47c380592053494e48
+   Length: 9 chars
+
+5. "GIỚI TÍNH"
+   Hex: 4749e1bb9a492054c38d4e48
+   Length: 9 chars
+
+6. "SỐ ĐIỆN THOẠI"
+   Hex: 53e1bb9020c49049e1bb864e2054484fe1baa049
+   Length: 13 chars
+
+7. "__EMPTY"
+   Hex: 5f5f454d505459
+   Length: 7 chars
+
+8. "ĐỊA CHỈ"
+   Hex: c490e1bb8a41204348e1bb88
+   Length: 7 chars
+
+9. "TRẠNG THÁI"
+   Hex: 5452e1baa04e47205448c38149
+   Length: 10 chars
+
+10. "ĐẢNG VIÊN"
+   Hex: c490e1baa24e47205649c38a4e
+   Length: 9 chars
+
+11. "NGÀY VÀO ĐẢNG"
+   Hex: 4e47c380592056c3804f20c490e1baa24e47
+   Length: 13 chars
+
+12. "CMND/CCCD"
+   Hex: 434d4e442f43434344
+   Length: 9 chars
+
+13. "HỌC VẤN"
+   Hex: 48e1bb8c432056e1baa44e
+   Length: 7 chars
+
+14. "QUÊ QUÁN"
+   Hex: 5155c38a205155c3814e
+   Length: 8 chars
+
+15. "NGHỀ NGHIỆP"
+   Hex: 4e4748e1bb80204e474849e1bb8650
+   Length: 11 chars
+
+16. "DÂN TỘC"
+   Hex: 44c3824e2054e1bb9843
+   Length: 7 chars
+
+17. "TÔN GIÁO"
+   Hex: 54c3944e204749c3814f
+   Length: 8 chars
+
+18. "TỔ DÂN PHỐ"
+   Hex: 54e1bb942044c3824e205048e1bb90
+   Length: 10 chars
+
+19. "TỈNH/THÀNH PHỐ"
+   Hex: 54e1bb884e482f5448c3804e48205048e1bb90
+   Length: 14 chars
+
+20. "PHƯỜNG/XÃ"
+   Hex: 5048c6afe1bb9c4e472f58c383
+   Length: 9 chars
+
+21. "GHI CHÚ ĐẶC BIỆT"
+   Hex: 474849204348c39a20c490e1bab643204249e1bb8654
+   Length: 16 chars
+
+22. "LOẠI CƯ TRÚ"
+   Hex: 4c4fe1baa0492043c6af205452c39a
+   Length: 11 chars
+
+
+=== KIỂM TRA CỘT "Họ và tên" ===
+KHÔNG TÌM THẤY cột chứa "tên" hoặc "Họ"

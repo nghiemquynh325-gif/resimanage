@@ -252,6 +252,27 @@ const AssociationsPage: React.FC = () => {
 
                                             // Define role labels based on association type
                                             const getRoleLabel = (role: AssociationRole): string => {
+                                                // Custom labels for Youth Union (Đoàn thanh niên)
+                                                if (selectedAssociation?.type === 'youth') {
+                                                    switch (role) {
+                                                        case 'president': return 'Bí thư';
+                                                        case 'vice_president': return 'Phó bí thư';
+                                                        case 'member': return 'Đoàn viên';
+                                                        default: return role;
+                                                    }
+                                                }
+
+                                                // Custom labels for Militia (Lực lượng dân quân)
+                                                if (selectedAssociation?.type === 'militia') {
+                                                    switch (role) {
+                                                        case 'squad_leader': return 'Khu đội trưởng';
+                                                        case 'team_leader': return 'Tiểu đội trưởng';
+                                                        case 'fighter': return 'Chiến sĩ';
+                                                        case 'member': return 'Chiến sĩ'; // Map member to Chiến sĩ for militia
+                                                        default: return role;
+                                                    }
+                                                }
+
                                                 // Custom labels for Front Committee
                                                 if (selectedAssociation?.type === 'front_committee') {
                                                     switch (role) {

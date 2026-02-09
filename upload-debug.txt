@@ -1,0 +1,17 @@
+﻿Đang đọc file: C:\Users\Admin\Downloads\qqe.xlsx
+Đã đọc 7613 dòng dữ liệu
+Đang chuyển đổi dữ liệu...
+Chuyển đổi thành công: 0 bản ghi
+Bỏ qua: 7613 bản ghi
+  - Dòng 2 (N/A): Thiếu họ tên
+  - Dòng 3 (N/A): Thiếu họ tên
+  - Dòng 4 (N/A): Thiếu họ tên
+  - Dòng 5 (N/A): Thiếu họ tên
+  - Dòng 6 (N/A): Thiếu họ tên
+  - Dòng 7 (N/A): Thiếu họ tên
+  - Dòng 8 (N/A): Thiếu họ tên
+  - Dòng 9 (N/A): Thiếu họ tên
+  - Dòng 10 (N/A): Thiếu họ tên
+  - Dòng 11 (N/A): Thiếu họ tên
+  ... và 7603 bản ghi khác
+Không có dữ liệu hợp lệ để upload!

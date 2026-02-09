@@ -127,3 +127,4 @@ export function isRLSError(error: any): boolean {
          error.message?.includes('new row violates row-level security');
 }
 
+

@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-01-14T22:46:10.461Z",
+  "file": "C:\\Users\\Admin\\Downloads\\qe.xlsx",
+  "total": 7615,
+  "valid": 7615,
+  "skipped": [],
+  "uploadResults": {
+    "success": 7515,
+    "failed": 100,
+    "errors": [
+      {
+        "batch": 8,
+        "error": "date/time field value out of range: \"1998-02-29\"",
+        "count": 100
+      }
+    ]
+  }
+}

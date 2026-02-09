@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-01-20T01:34:19.008Z",
+  "file": "C:\\Users\\Admin\\Downloads\\qqe.xlsx",
+  "total": 7613,
+  "valid": 7613,
+  "skipped": [],
+  "uploadResults": {
+    "success": 7613,
+    "failed": 0,
+    "errors": []
+  }
+}

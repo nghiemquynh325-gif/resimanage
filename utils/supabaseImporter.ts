@@ -19,73 +19,98 @@ export const batchInsertResidents = async (
         errors: []
     };
 
-    // Process in batches of 50 to avoid overwhelming the database
-    const batchSize = 50;
+    // Process in batches of 100 (increased from 50 for better performance)
+    const batchSize = 100;
 
     for (let i = 0; i < residents.length; i += batchSize) {
         const batch = residents.slice(i, i + batchSize);
 
-        for (let j = 0; j < batch.length; j++) {
-            const resident = batch[j];
-            const rowNumber = i + j + 1;
+        try {
+            // Prepare all resident data for this batch
+            const batchData = batch.map((resident, j) => ({
+                full_name: resident.fullName,
+                email: resident.email || null,
+                dob: resident.dob,
+                gender: resident.gender,
+                phone_number: resident.phoneNumber,
+                address: resident.address,
+                status: resident.status || 'pending_approval',
+                avatar: resident.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName || 'User')}&background=random&color=fff`,
 
-            try {
-                // Prepare resident data for Supabase residents table
-                const residentData: any = {
-                    full_name: resident.fullName,
-                    email: resident.email || null,
-                    dob: resident.dob, // Date of birth (required)
-                    gender: resident.gender, // Required: Nam/Nữ/Khác
-                    phone_number: resident.phoneNumber, // Required
-                    address: resident.address, // Required
-                    status: resident.status || 'pending_approval',
-                    avatar: resident.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(resident.fullName || 'User')}&background=random&color=fff`,
+                // Optional fields
+                identity_card: resident.identityCard || null,
+                education: resident.education || null,
+                hometown: resident.hometown || null,
+                profession: resident.profession || null,
+                ethnicity: resident.ethnicity || 'Kinh',
+                religion: resident.religion || 'Không',
+                unit: resident.unit || null,
+                province: resident.province || null,
+                ward: resident.ward || null,
+                residence_type: resident.residenceType || null,
 
-                    // Optional fields
-                    identity_card: resident.identityCard || null,
-                    education: resident.education || null,
-                    hometown: resident.hometown || null,
-                    profession: resident.profession || null,
-                    ethnicity: resident.ethnicity || 'Kinh',
-                    religion: resident.religion || 'Không',
-                    unit: resident.unit || null, // Tổ dân phố
-                    province: resident.province || null,
-                    ward: resident.ward || null,
+                // Party member info
+                is_party_member: resident.isPartyMember || false,
+                party_join_date: resident.partyJoinDate || null,
 
-                    // Party member info
-                    is_party_member: resident.isPartyMember || false,
-                    party_join_date: resident.partyJoinDate || null,
+                // Special status
+                special_status: resident.specialStatus || null,
+                special_notes: resident.specialNotes || null,
 
-                    // Special status
-                    special_status: resident.specialStatus || null,
-                    special_notes: resident.specialNotes || null,
+                // Household info
+                household_id: resident.householdId || null,
+                is_head_of_household: resident.isHeadOfHousehold || false
+            }));
 
-                    // Household info (will be set later if needed)
-                    household_id: resident.householdId || null,
-                    is_head_of_household: resident.isHeadOfHousehold || false
-                };
+            // Bulk insert the entire batch at once
+            const { data, error } = await supabase
+                .from('residents')
+                .insert(batchData)
+                .select();
 
-                const { error } = await supabase
-                    .from('residents')
-                    .insert(residentData);
+            if (error) {
+                // If batch insert fails, fall back to individual inserts to identify problematic rows
+                console.warn(`Batch insert failed, falling back to individual inserts:`, error.message);
 
-                if (error) {
-                    throw error;
+                for (let j = 0; j < batch.length; j++) {
+                    const resident = batch[j];
+                    const rowNumber = i + j + 1;
+
+                    try {
+                        const { error: individualError } = await supabase
+                            .from('residents')
+                            .insert(batchData[j]);
+
+                        if (individualError) {
+                            throw individualError;
+                        }
+
+                        result.success++;
+                    } catch (err: any) {
+                        result.failed++;
+                        result.errors.push({
+                            row: rowNumber,
+                            error: err.message || 'Lỗi không xác định'
+                        });
+                    }
                 }
-
-                result.success++;
-            } catch (error: any) {
-                result.failed++;
-                result.errors.push({
-                    row: rowNumber,
-                    error: error.message || 'Lỗi không xác định'
-                });
+            } else {
+                // Batch insert succeeded
+                result.success += data?.length || batch.length;
             }
+        } catch (error: any) {
+            // Unexpected error with the entire batch
+            console.error('Batch processing error:', error);
+            result.failed += batch.length;
+            result.errors.push({
+                row: i + 1,
+                error: `Lỗi batch: ${error.message}`
+            });
         }
 
-        // Small delay between batches to avoid rate limiting
+        // Small delay between batches to avoid rate limiting (reduced from 100ms to 50ms)
         if (i + batchSize < residents.length) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
     }
 

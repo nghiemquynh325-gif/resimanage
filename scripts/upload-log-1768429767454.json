@@ -1,0 +1,398 @@
+{
+  "timestamp": "2026-01-14T22:29:27.454Z",
+  "file": "C:\\Users\\Admin\\Downloads\\qe.xlsx",
+  "total": 7615,
+  "valid": 7615,
+  "skipped": [],
+  "uploadResults": {
+    "success": 0,
+    "failed": 7615,
+    "errors": [
+      {
+        "batch": 1,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 2,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 3,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 4,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 5,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 6,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 7,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 8,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 9,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 10,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 11,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 12,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 13,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 14,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 15,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 16,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 17,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 18,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 19,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 20,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 21,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 22,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 23,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 24,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 25,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 26,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 27,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 28,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 29,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 30,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 31,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 32,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 33,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 34,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 35,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 36,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 37,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 38,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 39,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 40,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 41,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 42,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 43,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 44,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 45,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 46,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 47,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 48,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 49,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 50,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 51,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 52,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 53,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 54,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 55,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 56,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 57,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 58,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 59,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 60,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 61,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 62,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 63,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 64,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 65,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 66,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 67,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 68,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 69,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 70,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 71,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 72,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 73,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 74,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 75,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 76,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 100
+      },
+      {
+        "batch": 77,
+        "error": "Could not find the 'createdAt' column of 'residents' in the schema cache",
+        "count": 15
+      }
+    ]
+  }
+}

@@ -7,6 +7,7 @@ import ResidentFormModal from '../../../components/residents/ResidentFormModal';
 import ResidentDetailModal from '../../../components/residents/ResidentDetailModal';
 import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import AIExcelImportModal from '../../../components/residents/AIExcelImportModal';
+import VoterImport from '../../../components/residents/VoterImport';
 import VotingOverview from '../../../components/VotingOverview';
 import { updateResident, getResidents, deleteResident, bulkDeleteResidents, getAllResidents, toggleVote, getVotingStats, getUniqueReligions, getUniqueEthnicities, getResidenceTypeStats } from '../../../utils/mockApi';
 import Table from '../../../components/ui/Table';
@@ -62,6 +63,7 @@ const ResidentsPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isVoterImportOpen, setIsVoterImportOpen] = useState(false);
   const [isVotingOverviewOpen, setIsVotingOverviewOpen] = useState(false);
   const [selectedResident, setSelectedResident] = useState<Resident | undefined>(undefined);
 
@@ -740,11 +742,19 @@ const ResidentsPage: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setIsImportModalOpen(true)}
+              onClick={() => setIsVoterImportOpen(true)}
               className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95 whitespace-nowrap"
             >
               <FileSpreadsheet size={18} />
-              Import Excel
+              Import Nhanh
+            </button>
+
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex-1 md:flex-initial flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm active:scale-95 whitespace-nowrap"
+            >
+              <FileSpreadsheet size={18} />
+              Import AI
             </button>
 
             <button
@@ -1303,6 +1313,16 @@ const ResidentsPage: React.FC = () => {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={() => {
           showToast('Import dữ liệu thành công', 'success');
+          fetchResidents();
+        }}
+      />
+
+      {/* Voter Import Modal */}
+      <VoterImport
+        isOpen={isVoterImportOpen}
+        onClose={() => setIsVoterImportOpen(false)}
+        onSuccess={() => {
+          showToast('Import cư dân thành công', 'success');
           fetchResidents();
         }}
       />

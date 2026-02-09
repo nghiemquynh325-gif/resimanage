@@ -281,7 +281,7 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
 
                 {/* Footer */}
                 {selectedResident && (
-                    <div className="p-6 border-t border-gray-200 bg-gray-50">
+                    <div className="p-6 border-t border-gray-200 bg-gray-50 max-h-[50vh] overflow-y-auto">
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Vai trò trong hội
@@ -291,8 +291,17 @@ const AddMemberModal: React.FC<AddMemberModalProps> = ({
                                 onChange={(e) => setSelectedRole(e.target.value as AssociationRole)}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
+                                {/* Youth Union (Đoàn thanh niên) roles */}
+                                {associationType === 'youth' && (
+                                    <>
+                                        <option value="member">Đoàn viên</option>
+                                        <option value="vice_president">Phó bí thư</option>
+                                        <option value="president">Bí thư</option>
+                                    </>
+                                )}
+
                                 {/* Default roles for most associations */}
-                                {(!associationType || ['veterans', 'women', 'youth', 'red_cross', 'discharged_military', 'party_member_213'].includes(associationType)) && (
+                                {(!associationType || ['veterans', 'women', 'red_cross', 'discharged_military', 'party_member_213'].includes(associationType)) && (
                                     <>
                                         <option value="member">Hội viên</option>
                                         <option value="vice_president">Chi hội phó</option>

@@ -1,0 +1,23 @@
+﻿─Éß╗ìc file log: upload-log-1768429262738.json
+
+=== Kß║╛T QUß║ó UPLOAD ===
+Tß╗òng sß╗æ d├▓ng: 7615
+Bß║ún ghi hß╗úp lß╗ç: 3549
+Bß║ún ghi bß╗Å qua: 4066
+
+Kß║┐t quß║ú upload:
+  Γ£ô Th├ánh c├┤ng: 0
+  Γ£ù Thß║Ñt bß║íi: 3549
+
+Lß╗ùi: 36 batches
+Chi tiß║┐t 3 lß╗ùi ─æß║ºu ti├¬n:
+  - Batch 1: Could not find the 'createdAt' column of 'residents' in the schema cache...
+  - Batch 2: Could not find the 'createdAt' column of 'residents' in the schema cache...
+  - Batch 3: Could not find the 'createdAt' column of 'residents' in the schema cache...
+
+=== Mß║¬U Dß╗« LIß╗åU Bß╗è Bß╗Ä QUA (5 D├ÆNG ─Éß║ªU) ===
+D├▓ng 2 (N/A): Thiß║┐u th├┤ng tin: ng├áy sinh
+D├▓ng 3 (N/A): Thiß║┐u th├┤ng tin: ng├áy sinh
+D├▓ng 4 (N/A): Thiß║┐u th├┤ng tin: ng├áy sinh
+D├▓ng 5 (N/A): Thiß║┐u th├┤ng tin: ng├áy sinh
+D├▓ng 6 (N/A): Thiß║┐u th├┤ng tin: ng├áy sinh
